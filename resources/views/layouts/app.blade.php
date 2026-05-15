@@ -37,14 +37,13 @@
                         <li class="nav-item"><a href="{{ route('dashboard') }}" class="nav-link">Dashboard</a></li>
                         <li class="nav-item"><a href="{{ route('products.index') }}" class="nav-link">Katalog</a></li>
                         <li class="nav-item ms-lg-3">
-                            <a href="{{ route('logout') }}" class="btn btn-outline-danger btn-sm"
-                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                Keluar
-                            </a>
+                            <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    Keluar
+                                </button>
+                            </form>
                         </li>
-                        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                            @csrf
-                        </form>
                     @else
                         <li class="nav-item"><a href="{{ route('login') }}" class="nav-link">Login</a></li>
                         <li class="nav-item ms-lg-2">
