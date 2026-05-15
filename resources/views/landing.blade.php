@@ -102,12 +102,15 @@
 
             <div class="row g-4">
                 @forelse ($products as $product)
+                    @php
+                        $productImage = $product->firstAvailableImage();
+                    @endphp
                     <div class="col-6 col-lg-3">
                         <a href="{{ route('login') }}" class="text-decoration-none">
                             <div class="product-card">
                                 <div class="product-img-wrapper">
-                                    @if ($product->images->first())
-                                        <img src="{{ asset('storage/' . $product->images->first()->image_url) }}"
+                                    @if ($productImage)
+                                        <img src="{{ $productImage->publicUrl() }}"
                                             alt="Foto produk {{ $product->name }}" width="320" height="320"
                                             loading="lazy" decoding="async">
                                     @else

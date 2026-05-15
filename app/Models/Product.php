@@ -13,6 +13,7 @@ class Product extends Model
         'sku',
         'name',
         'description',
+        'base_price',
         'main_image',
         'status',
     ];
@@ -58,6 +59,18 @@ class Product extends Model
     {
         // Foreign key: product_id on the product_images table.
         return $this->hasMany(ProductImage::class, 'product_id', 'id');
+    }
+
+    public function availableImages()
+    {
+        $images = $this->relationLoaded('images') ? $this->images : $this->images()->get();
+
+        return $images->filter(fn (ProductImage $image) => $image->existsOnPublicDisk())->values();
+    }
+
+    public function firstAvailableImage(): ?ProductImage
+    {
+        return $this->availableImages()->first();
     }
 
     /**

@@ -50,6 +50,7 @@
             @forelse($products as $product)
                 @php
                     $productIndex = $loop->index;
+                    $availableImages = $product->availableImages();
                     $productStatusLabel = match ($product->status) {
                         'active' => 'Aktif',
                         'inactive' => 'Nonaktif',
@@ -61,15 +62,15 @@
 
                         {{-- IMAGE --}}
                         <div class="product-img-container">
-                            @if ($product->images->count())
+                            @if ($availableImages->isNotEmpty())
                                 <div id="carousel{{ $product->id }}" class="carousel slide h-100" data-bs-ride="carousel">
                                     <div class="carousel-inner h-100">
 
-                                        @foreach ($product->images as $key => $img)
+                                        @foreach ($availableImages as $key => $img)
                                             <div class="carousel-item {{ $key == 0 ? 'active' : '' }} h-100">
 
                                                 <div class="d-flex align-items-center justify-content-center h-100">
-                                                    <img src="{{ asset('storage/' . $img->image_url) }}"
+                                                    <img src="{{ $img->publicUrl() }}"
                                                         alt="Foto produk {{ $product->name }}"
                                                         width="320" height="176"
                                                         @if ($productIndex === 0 && $key === 0) fetchpriority="high" @else loading="lazy" @endif

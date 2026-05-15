@@ -6,9 +6,9 @@ use App\Http\Controllers\{
     UserController,
     ProductController,
     DashboardController,
+    LandingController,
     OrderController
 };
-use App\Models\{Product, Order, User};
 
 /*
 |--------------------------------------------------------------------------
@@ -16,20 +16,7 @@ use App\Models\{Product, Order, User};
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    $products = Product::with('images')->where('status', 'active')->take(8)->get();
-
-    return view('landing', [
-        'products'     => $products,
-        'productCount' => Product::count(),
-        'orderCount'   => Order::count(),
-        'userCount'    => User::count()
-    ]);
-});
-
-if (app()->environment('local')) {
-    Route::get('/phpinfo', fn() => phpinfo());
-}
+Route::get('/', LandingController::class)->name('landing');
 
 /*
 |--------------------------------------------------------------------------

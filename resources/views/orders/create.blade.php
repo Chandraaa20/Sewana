@@ -11,6 +11,7 @@
         $minimumEndDate = $oldStartDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $oldStartDate) && $oldStartDate >= $today
             ? $oldStartDate
             : $today;
+        $availableImages = $product->availableImages();
     @endphp
 
     <div class="admin-page admin-page--wide">
@@ -41,13 +42,13 @@
                 <div class="row g-4">
                     {{-- Gambar Produk --}}
                     <div class="col-md-5 mb-3">
-                        @if ($product->images->count())
+                        @if ($availableImages->isNotEmpty())
                             <div id="carouselOrder{{ $product->id }}"
                                 class="carousel slide border rounded order-summary__image">
                                 <div class="carousel-inner">
-                                    @foreach ($product->images as $key => $img)
+                                    @foreach ($availableImages as $key => $img)
                                         <div class="carousel-item {{ $key == 0 ? 'active' : '' }}">
-                                            <img src="{{ asset('storage/' . $img->image_url) }}"
+                                            <img src="{{ $img->publicUrl() }}"
                                                 class="d-block w-100 rounded"
                                                 alt="Foto produk {{ $product->name }}"
                                                 width="640" height="420"
@@ -57,7 +58,7 @@
                                     @endforeach
                                 </div>
 
-                                @if ($product->images->count() > 1)
+                                @if ($availableImages->count() > 1)
                                     <button class="carousel-control-prev" type="button"
                                         data-bs-target="#carouselOrder{{ $product->id }}" data-bs-slide="prev"
                                         aria-label="Gambar produk sebelumnya">

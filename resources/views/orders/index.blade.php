@@ -17,6 +17,7 @@
                 @foreach ($orders as $order)
                     @php
                         $orderIndex = $loop->index;
+                        $productImage = $order->product?->firstAvailableImage();
                     @endphp
                     <div class="col-12">
                         <div class="card shadow-sm border-0 rounded-4 overflow-hidden admin-order-card">
@@ -25,8 +26,8 @@
                                 {{-- Gambar Produk --}}
                                 <div
                                     class="col-md-3 text-center bg-light d-flex align-items-center justify-content-center p-3">
-                                    @if ($order->product && $order->product->images->first())
-                                        <img src="{{ asset('storage/' . $order->product->images->first()->image_url) }}"
+                                    @if ($order->product && $productImage)
+                                        <img src="{{ $productImage->publicUrl() }}"
                                             alt="Foto produk {{ $order->product->name }}"
                                             class="img-fluid rounded-3 shadow-sm admin-list-image"
                                             width="160" height="160"
@@ -139,6 +140,9 @@
                         </div>
                     </div>
                 @endforeach
+            </div>
+            <div class="admin-pagination mt-4">
+                {{ $orders->links('pagination::bootstrap-5') }}
             </div>
         @else
             {{-- Jika Tidak Ada Pesanan --}}

@@ -39,6 +39,7 @@
                 @foreach ($orders as $order)
                     @php
                         $orderIndex = $loop->index;
+                        $productImage = $order->product?->firstAvailableImage();
                         $status = $order->order_status;
                         $statusClass = match ($status) {
                             'pending' => 'warning',
@@ -65,8 +66,8 @@
 
                                 <div
                                     class="col-md-3 col-lg-2 bg-light d-flex align-items-center justify-content-center p-3 border-end">
-                                    @if ($order->product && $order->product->images->first())
-                                        <img src="{{ asset('storage/' . $order->product->images->first()->image_url) }}"
+                                    @if ($order->product && $productImage)
+                                        <img src="{{ $productImage->publicUrl() }}"
                                             class="img-fluid rounded-3 shadow-sm admin-square-media"
                                             alt="Foto produk {{ $order->product->name }}"
                                             width="160" height="160"

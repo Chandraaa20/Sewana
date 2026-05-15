@@ -4,6 +4,10 @@
 @section('meta_description', 'Perbarui detail produk, foto, dan varian stok Sewana.')
 
 @section('content')
+    @php
+        $productImages = $product->images;
+    @endphp
+
     <div class="admin-page">
         <div class="admin-page-header">
             <div>
@@ -73,16 +77,22 @@
                             <div class="admin-field-error">{{ $message }}</div>
                         @enderror
 
-                        @if ($product->images->count())
+                        @if ($productImages->isNotEmpty())
                             <div class="mt-3 d-flex flex-wrap gap-3">
-                                @foreach ($product->images as $imageIndex => $img)
+                                @foreach ($productImages as $imageIndex => $img)
                                     <div class="admin-variant-item text-center">
-                                        <img src="{{ asset('storage/' . $img->image_url) }}"
-                                            class="admin-image-thumb img-thumbnail"
-                                            alt="Foto produk {{ $product->name }}"
-                                            width="100" height="100"
-                                            @if ($imageIndex === 0) fetchpriority="high" @else loading="lazy" @endif
-                                            decoding="async">
+                                        @if ($img->existsOnPublicDisk())
+                                            <img src="{{ $img->publicUrl() }}"
+                                                class="admin-image-thumb img-thumbnail"
+                                                alt="Foto produk {{ $product->name }}"
+                                                width="100" height="100"
+                                                @if ($imageIndex === 0) fetchpriority="high" @else loading="lazy" @endif
+                                                decoding="async">
+                                        @else
+                                            <div class="admin-image-thumb img-thumbnail d-flex align-items-center justify-content-center text-muted small">
+                                                File hilang
+                                            </div>
+                                        @endif
                                         <div class="form-check mt-2 mb-0">
                                             <input type="checkbox" name="delete_images[]" value="{{ $img->id }}"
                                                 class="form-check-input" id="delete-image-{{ $img->id }}">

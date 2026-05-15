@@ -74,17 +74,18 @@
                 @forelse($customerData['popular_products'] as $product)
                     @php
                         $productIndex = $loop->index;
+                        $availableImages = $product->availableImages();
                     @endphp
                     <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
                         <div class="card shadow-sm h-100 product-card d-flex flex-column border-0 rounded-4 overflow-hidden">
                             <div class="position-relative img-hover-zoom">
-                                @if ($product->images->count())
+                                @if ($availableImages->isNotEmpty())
                                     <div id="carouselPopular{{ $product->id }}" class="carousel slide h-100"
                                         data-bs-ride="carousel">
                                         <div class="carousel-inner h-100">
-                                            @foreach ($product->images as $key => $img)
+                                            @foreach ($availableImages as $key => $img)
                                                 <div class="carousel-item {{ $key == 0 ? 'active' : '' }} h-100">
-                                                    <img src="{{ asset('storage/' . $img->image_url) }}"
+                                                    <img src="{{ $img->publicUrl() }}"
                                                         class="d-block w-100 h-100 product-img"
                                                         alt="Foto produk {{ $product->name }}"
                                                         width="320" height="176"
@@ -93,7 +94,7 @@
                                                 </div>
                                             @endforeach
                                         </div>
-                                        @if ($product->images->count() > 1)
+                                        @if ($availableImages->count() > 1)
                                             <button class="carousel-control-prev" type="button"
                                                 data-bs-target="#carouselPopular{{ $product->id }}" data-bs-slide="prev"
                                                 aria-label="Gambar produk sebelumnya">
@@ -210,16 +211,16 @@
                                     <div id="imageCarouselPopular{{ $product->id }}" class="carousel slide"
                                         data-bs-ride="carousel">
                                         <div class="carousel-inner">
-                                            @foreach ($product->images as $key => $img)
+                                            @foreach ($availableImages as $key => $img)
                                                 <div class="carousel-item {{ $key == 0 ? 'active' : '' }}">
-                                                    <img src="{{ asset('storage/' . $img->image_url) }}"
+                                                    <img src="{{ $img->publicUrl() }}"
                                                         class="d-block w-100 product-modal__img"
                                                         alt="Foto produk {{ $product->name }}"
                                                         width="960" height="640" loading="lazy" decoding="async">
                                                 </div>
                                             @endforeach
                                         </div>
-                                        @if ($product->images->count() > 1)
+                                        @if ($availableImages->count() > 1)
                                             <button class="carousel-control-prev" type="button"
                                                 data-bs-target="#imageCarouselPopular{{ $product->id }}" data-bs-slide="prev"
                                                 aria-label="Gambar produk sebelumnya">

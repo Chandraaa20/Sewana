@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Order extends Model
 {
@@ -57,5 +58,24 @@ class Order extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+
+    public function identityPhotoUrl(): ?string
+    {
+        return $this->publicDiskUrl($this->identity_photo);
+    }
+
+    public function paymentProofUrl(): ?string
+    {
+        return $this->publicDiskUrl($this->bukti_pembayaran);
+    }
+
+    private function publicDiskUrl(?string $path): ?string
+    {
+        if (! filled($path) || ! Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($path);
     }
 }

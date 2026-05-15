@@ -47,12 +47,10 @@
                 ? ($order->variant->size ?? '-') . ' / ' . ($order->variant->color ?? '-')
                 : 'Tidak ada varian';
 
-            $productImage = null;
-            if ($order->product && $order->product->images->first()) {
-                $productImage = asset('storage/' . $order->product->images->first()->image_url);
-            }
+            $productImage = $order->product?->firstAvailableImage()?->publicUrl();
 
-            $identityPhoto = $order->identity_photo ? asset('storage/' . $order->identity_photo) : null;
+            $identityPhoto = $order->identityPhotoUrl();
+            $paymentProof = $order->paymentProofUrl();
         @endphp
 
         <div class="row g-4">
@@ -219,18 +217,18 @@
                                 <i class="bi bi-receipt text-success me-2"></i> Bukti Pembayaran
                             </h6>
 
-                            @if ($order->bukti_pembayaran)
+                            @if ($paymentProof)
                                 <a class="btn btn-sm btn-outline-success rounded-pill px-3" target="_blank"
-                                    rel="noopener" href="{{ asset('storage/' . $order->bukti_pembayaran) }}"
+                                    rel="noopener" href="{{ $paymentProof }}"
                                     aria-label="Perbesar bukti pembayaran pesanan #{{ $order->id }}">
                                     Perbesar
                                 </a>
                             @endif
                         </div>
 
-                        @if ($order->bukti_pembayaran)
+                        @if ($paymentProof)
                             <div class="text-center bg-light rounded-4 p-3 border border-dashed">
-                                <img src="{{ asset('storage/' . $order->bukti_pembayaran) }}"
+                                <img src="{{ $paymentProof }}"
                                     class="img-fluid rounded-3 shadow-sm admin-proof-image"
                                     alt="Bukti pembayaran pesanan #{{ $order->id }}" width="640" height="420"
                                     loading="lazy" decoding="async">
