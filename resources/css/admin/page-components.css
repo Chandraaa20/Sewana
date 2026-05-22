@@ -166,8 +166,25 @@
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
+.search-input-wrap {
+    position: relative;
+    isolation: isolate;
+}
+
+.search-input-wrap .input-group-text {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
 .admin-search-box .form-control {
     min-width: 0;
+}
+
+.search-input {
+    min-height: 42px;
 }
 
 .admin-toolbar {
@@ -182,6 +199,12 @@
     border-radius: 18px;
     background: #ffffff;
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.search-card,
+.filter-card,
+.search-form {
+    min-width: 0;
 }
 
 .admin-toolbar .admin-search-box {
@@ -202,6 +225,14 @@
 .admin-toolbar .btn,
 .admin-filter-toolbar .btn {
     white-space: nowrap;
+}
+
+.search-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    line-height: 1.2;
 }
 
 .admin-status-badge {
@@ -493,10 +524,67 @@
         align-items: flex-start;
         flex-direction: column;
         border-radius: 20px;
+        background: #ffffff;
     }
 
     .admin-form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .admin-toolbar.search-card,
+    .admin-toolbar.filter-card {
+        gap: 10px;
+        margin-bottom: 18px;
+        padding: 10px;
+        border-radius: 16px;
+        background: #ffffff;
+        overflow: visible;
+    }
+
+    .admin-toolbar .admin-search-box,
+    .admin-search-box.search-input-wrap,
+    .admin-filter-toolbar .admin-filter-search {
+        flex: 0 1 auto;
+        width: 100%;
+        max-width: 100%;
+        min-height: 42px;
+    }
+
+    .admin-search-box .input-group-text,
+    .admin-filter-search .input-group-text {
+        padding-right: 0.45rem;
+        padding-left: 0.85rem !important;
+    }
+
+    .admin-search-box .form-control,
+    .admin-filter-search .form-control,
+    .search-input {
+        width: 1%;
+        min-height: 42px;
+        padding-top: 0.55rem !important;
+        padding-bottom: 0.55rem !important;
+        font-size: 0.94rem;
+    }
+
+    .admin-filter-toolbar.filter-card {
+        align-items: stretch;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .admin-filter-toolbar .admin-filter-select,
+    .filter-select {
+        width: 100%;
+        min-height: 38px;
+    }
+
+    .filter-card::before,
+    .filter-card::after,
+    .search-card::before,
+    .search-card::after,
+    .search-card-decoration {
+        display: none !important;
+        opacity: 0 !important;
     }
 }
 
@@ -512,7 +600,8 @@
 
     .admin-form-actions .btn,
     .admin-page-header .btn,
-    .admin-toolbar .btn {
+    .admin-toolbar .btn,
+    .search-button {
         width: 100%;
     }
 
@@ -522,6 +611,16 @@
         align-items: stretch;
         flex-direction: column;
         width: 100%;
+    }
+
+    .admin-toolbar.search-card,
+    .admin-toolbar.filter-card {
+        gap: 9px;
+        padding: 10px;
+    }
+
+    .admin-toolbar-actions {
+        gap: 8px;
     }
 
     .admin-filter-toolbar .admin-filter-select {
@@ -538,5 +637,334 @@
         min-height: 34px;
         padding: 0.45rem 0.62rem;
         font-size: 0.82rem;
+    }
+}
+
+/* Admin typography scale. */
+.admin-page-title {
+    font-size: var(--admin-font-title);
+}
+
+.admin-page-subtitle {
+    font-size: 0.9rem;
+}
+
+.admin-page-eyebrow,
+.admin-field-kicker,
+.admin-mini-label {
+    font-size: 0.72rem;
+}
+
+.admin-content .btn,
+.admin-content .form-control,
+.admin-content .form-select,
+.admin-content .dropdown-menu,
+.admin-content .table th,
+.admin-content .table td {
+    font-size: var(--admin-font-base);
+}
+
+.admin-content small,
+.admin-content .small,
+.admin-form-help,
+.admin-field-error {
+    font-size: var(--admin-font-sm);
+}
+
+.admin-status-badge,
+.status-badge,
+.badge-status {
+    font-size: var(--admin-font-xs);
+}
+
+.admin-card h5,
+.admin-card h6,
+.admin-content .card h5,
+.admin-content .card h6 {
+    font-size: var(--admin-font-md);
+}
+
+.admin-empty-state h4,
+.admin-empty-state h5,
+.admin-empty-state h6 {
+    font-size: var(--admin-font-md);
+}
+
+@media (max-width: 575.98px) {
+    .admin-page-title {
+        font-size: 1.35rem;
+    }
+
+    .admin-content .btn,
+    .admin-content .form-control,
+    .admin-content .form-select,
+    .admin-content .table th,
+    .admin-content .table td {
+        font-size: var(--admin-font-base);
+    }
+}
+
+/* Modern search/filter toolbars.
+   Use scoped grid layouts so generic .search-form usage cannot disturb report forms. */
+.admin-toolbar.search-form {
+    display: grid !important;
+    grid-template-columns: minmax(280px, 1fr) auto;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: min(100%, 920px);
+    margin: 0 auto 22px;
+    padding: 12px;
+    border-radius: 18px;
+}
+
+.admin-toolbar.search-form .search-input-wrap,
+.admin-toolbar.search-form .admin-search-box {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    height: 44px;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 999px;
+    background: #f8fafc;
+    box-shadow: none;
+}
+
+.admin-toolbar.search-form .search-input-wrap .input-group-text,
+.admin-toolbar.search-form .admin-search-box .input-group-text {
+    height: 100%;
+    padding-right: 0.55rem;
+    padding-left: 1rem !important;
+    background: transparent !important;
+}
+
+.admin-toolbar.search-form .search-input {
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.admin-toolbar.search-form .admin-toolbar-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+    width: auto;
+}
+
+.admin-toolbar.search-form .search-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 96px;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.admin-toolbar.search-form .admin-toolbar-actions .btn:not(.search-button) {
+    height: 44px;
+    min-height: 44px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-filter-toolbar.search-form {
+    display: grid !important;
+    grid-template-columns: minmax(240px, 1fr) minmax(150px, 170px) auto;
+    align-items: center;
+    gap: 10px;
+    width: min(100%, 640px);
+    min-width: 0;
+}
+
+.admin-filter-toolbar.search-form .search-input-wrap,
+.admin-filter-toolbar.search-form .admin-filter-search {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 38px;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.admin-filter-toolbar.search-form .filter-select {
+    width: 100%;
+    min-width: 0;
+    height: 38px;
+    border-radius: 999px;
+}
+
+.admin-filter-toolbar.search-form .admin-toolbar-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    width: auto;
+}
+
+.admin-filter-toolbar.search-form .search-button {
+    width: auto;
+    min-width: 96px;
+    height: 38px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .admin-toolbar.search-form,
+    .admin-filter-toolbar.search-form {
+        grid-template-columns: 1fr;
+        width: 100%;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .admin-toolbar.search-form .search-input-wrap,
+    .admin-toolbar.search-form .admin-search-box,
+    .admin-filter-toolbar.search-form .search-input-wrap,
+    .admin-filter-toolbar.search-form .admin-filter-search,
+    .admin-filter-toolbar.search-form .filter-select {
+        width: 100%;
+        max-width: none;
+    }
+
+    .admin-toolbar.search-form .admin-toolbar-actions,
+    .admin-filter-toolbar.search-form .admin-toolbar-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .admin-toolbar.search-form .search-button,
+    .admin-filter-toolbar.search-form .search-button,
+    .admin-toolbar.search-form .admin-toolbar-actions .btn,
+    .admin-filter-toolbar.search-form .admin-toolbar-actions .btn {
+        width: 100%;
+    }
+
+    .search-card::before,
+    .search-card::after,
+    .filter-card::before,
+    .filter-card::after,
+    .search-card-decoration {
+        display: none !important;
+        content: none !important;
+        opacity: 0 !important;
+    }
+}
+
+/* Modern surface polish. */
+.admin-page-header {
+    position: relative;
+    overflow: hidden;
+    padding: 20px 22px;
+    border-color: rgba(15, 23, 42, 0.07);
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+}
+
+.admin-page-header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.045), transparent 42%);
+}
+
+.admin-page-header > * {
+    position: relative;
+    z-index: 1;
+}
+
+.admin-page-eyebrow,
+.admin-field-kicker {
+    letter-spacing: 0.1em;
+}
+
+.admin-page-title {
+    letter-spacing: -0.035em;
+}
+
+.admin-page-subtitle {
+    color: #64748b;
+}
+
+.admin-empty-state {
+    padding: 42px 22px;
+    border: 1px dashed rgba(15, 23, 42, 0.14);
+    border-radius: 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+}
+
+.admin-empty-state i,
+.admin-empty-icon-lg {
+    color: #94a3b8 !important;
+}
+
+.admin-empty-state i {
+    font-size: 2.8rem;
+}
+
+.admin-content .modal-content {
+    border-radius: 20px;
+}
+
+.admin-content .modal-header {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.admin-content .modal-footer {
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.admin-content .table:not(.table-bordered) th {
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.admin-content .table:not(.table-bordered) td {
+    color: #1f2937;
+}
+
+.admin-content .table-hover tbody tr {
+    transition: background-color 0.16s ease;
+}
+
+@media (max-width: 575.98px) {
+    .admin-page-header {
+        gap: 12px;
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .admin-page-title {
+        font-size: 1.35rem;
+    }
+
+    .admin-page-subtitle {
+        font-size: 0.86rem;
+    }
+
+    .admin-empty-state {
+        padding: 30px 16px;
+        border-radius: 18px;
     }
 }

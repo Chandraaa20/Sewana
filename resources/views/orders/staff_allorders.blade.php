@@ -12,16 +12,16 @@
             </div>
 
             <form method="GET" action="{{ route('pegawai.orders.all') }}"
-                class="admin-filter-toolbar">
-                <div class="input-group input-group-sm shadow-sm admin-filter-search">
+                class="admin-filter-toolbar filter-card search-form">
+                <div class="input-group input-group-sm shadow-sm admin-filter-search search-input-wrap">
                     <span class="input-group-text bg-white border-end-0 text-muted">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0"
+                    <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 search-input"
                         placeholder="Cari pelanggan / produk..." aria-label="Cari pelanggan atau produk">
                 </div>
 
-                <select name="status" class="form-select form-select-sm shadow-sm admin-filter-select"
+                <select name="status" class="form-select form-select-sm shadow-sm admin-filter-select filter-select"
                     aria-label="Filter status pesanan">
                     <option value="">Semua Status</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Menunggu</option>
@@ -32,7 +32,7 @@
                 </select>
 
                 <div class="admin-toolbar-actions">
-                    <button type="submit" class="btn btn-sm btn-dark shadow-sm px-3">
+                    <button type="submit" class="btn btn-sm btn-dark shadow-sm px-3 search-button">
                         Filter
                     </button>
                     @if (request('search') || request('status'))

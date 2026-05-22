@@ -11,13 +11,13 @@
             </div>
         </div>
 
-        <form method="GET" action="{{ route('pemilik.users.index') }}" class="admin-toolbar">
-            <div class="input-group admin-search-box">
+        <form method="GET" action="{{ route('pemilik.users.index') }}" class="admin-toolbar search-card filter-card search-form">
+            <div class="input-group admin-search-box search-input-wrap">
                 <span class="input-group-text bg-transparent border-0 ps-4 text-muted">
                     <i class="bi bi-search"></i>
                 </span>
                 <input type="text" name="search" value="{{ request('search') }}"
-                    class="form-control border-0 shadow-none py-2 bg-transparent" placeholder="Cari nama atau email...">
+                    class="form-control border-0 shadow-none py-2 bg-transparent search-input" placeholder="Cari nama atau email...">
 
             </div>
             <div class="admin-toolbar-actions">
@@ -26,7 +26,7 @@
                         Reset
                     </a>
                 @endif
-                <button class="btn btn-dark rounded-pill px-4 fw-bold" type="submit">Cari</button>
+                <button class="btn btn-dark rounded-pill px-4 fw-bold search-button" type="submit">Cari</button>
             </div>
         </form>
 

@@ -14,12 +14,12 @@
         </div>
 
         {{-- Search --}}
-        <form method="GET" action="{{ route('penyewa.products.index') }}" class="admin-toolbar">
-            <div class="input-group admin-search-box">
+        <form method="GET" action="{{ route('penyewa.products.index') }}" class="admin-toolbar search-card filter-card search-form">
+            <div class="input-group admin-search-box search-input-wrap">
                 <span class="input-group-text bg-white border-0 ps-4">
                     <i class="bi bi-search text-muted"></i>
                 </span>
-                <input type="text" name="search" class="form-control" placeholder="Cari produk..."
+                <input type="text" name="search" class="form-control search-input" placeholder="Cari produk..."
                     value="{{ request('search') }}" aria-label="Cari produk">
             </div>
             <div class="admin-toolbar-actions">
@@ -28,7 +28,7 @@
                         Reset
                     </a>
                 @endif
-                <button class="btn btn-dark rounded-pill px-4 fw-bold" type="submit">Cari</button>
+                <button class="btn btn-dark rounded-pill px-4 fw-bold search-button" type="submit">Cari</button>
             </div>
         </form>
 

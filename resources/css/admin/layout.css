@@ -114,10 +114,17 @@
     --admin-main-bg: #f4f7fb;
     --admin-topbar-bg: rgba(255, 255, 255, 0.86);
     --admin-topbar-border: rgba(15, 23, 42, 0.08);
-    --admin-content-gutter: clamp(16px, 2.5vw, 32px);
+    --admin-content-gutter: clamp(16px, 2vw, 28px);
     --admin-content-y: clamp(22px, 3vw, 36px);
-    --admin-content-max: 1160px;
-    --admin-content-wide-max: 1240px;
+    --admin-content-max: 1440px;
+    --admin-content-wide-max: 1440px;
+    --admin-font-xs: 0.75rem;
+    --admin-font-sm: 0.8125rem;
+    --admin-font-base: 0.875rem;
+    --admin-font-md: 1rem;
+    --admin-font-lg: 1.125rem;
+    --admin-font-title: clamp(1.35rem, 1.8vw, 1.65rem);
+    --admin-font-stat: clamp(1.75rem, 2.4vw, 2rem);
     --admin-ease: cubic-bezier(0.22, 1, 0.36, 1);
     --admin-ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
     --admin-duration-fast: 160ms;
@@ -133,6 +140,12 @@
     font-family: "Plus Jakarta Sans", sans-serif;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+}
+
+.admin-body,
+.admin-content {
+    font-size: var(--admin-font-base);
+    line-height: 1.5;
 }
 
 .admin-shell {
@@ -667,6 +680,150 @@
         animation-duration: 1ms !important;
         scroll-behavior: auto !important;
         transition-duration: 1ms !important;
+    }
+}
+
+/* Modern sidebar polish. */
+.sidebar.admin-sidebar {
+    background: linear-gradient(180deg, #0f172a 0%, #0b1120 100%);
+    border-right-color: rgba(255, 255, 255, 0.07);
+}
+
+.admin-sidebar-body {
+    padding: 20px 16px 18px;
+}
+
+.sidebar-brand {
+    min-height: 42px;
+    margin-bottom: 14px;
+    padding: 0 10px;
+    font-size: 1.35rem;
+    letter-spacing: -0.045em;
+}
+
+.sidebar-user-card {
+    gap: 10px;
+    margin: 0 0 18px;
+    padding: 12px;
+    border-color: rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.045);
+    box-shadow: none;
+}
+
+.sidebar-user-card:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.065);
+}
+
+.sidebar-user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+.sidebar-user-name {
+    font-size: 0.86rem;
+}
+
+.sidebar-user-role {
+    margin-top: 2px;
+    color: rgba(255, 255, 255, 0.46);
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+}
+
+.sidebar-nav {
+    gap: 5px;
+    padding: 0;
+}
+
+.sidebar .sidebar-section-title {
+    margin: 18px 10px 8px;
+    color: rgba(255, 255, 255, 0.34);
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+}
+
+.sidebar .nav-link {
+    min-height: 42px;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: 13px;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.88rem;
+    font-weight: 750;
+}
+
+.sidebar .nav-link::before {
+    inset: 9px auto 9px 0;
+    width: 3px;
+    background: #60a5fa;
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 1rem;
+}
+
+.sidebar .nav-link:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+}
+
+.sidebar .nav-link:hover i {
+    color: rgba(147, 197, 253, 0.95);
+    transform: none;
+}
+
+.sidebar .nav-link.active {
+    border-color: rgba(96, 165, 250, 0.22);
+    background: rgba(37, 99, 235, 0.18);
+    color: #ffffff !important;
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.08);
+}
+
+.sidebar .nav-link.active i {
+    color: #93c5fd;
+    transform: none;
+}
+
+.sidebar .nav-link.active::before {
+    opacity: 1;
+}
+
+.sidebar-footer {
+    padding-top: 14px;
+}
+
+.sidebar-logout {
+    min-height: 42px;
+    border-color: rgba(248, 113, 113, 0.18);
+    border-radius: 13px;
+    background: rgba(248, 113, 113, 0.08);
+    color: #fca5a5 !important;
+}
+
+.sidebar-logout:hover {
+    transform: none;
+    border-color: rgba(248, 113, 113, 0.28);
+    background: rgba(248, 113, 113, 0.13) !important;
+    color: #fecaca !important;
+}
+
+@media (max-width: 991.98px) {
+    .sidebar.admin-sidebar {
+        width: min(84vw, 320px);
+        box-shadow: 20px 0 44px rgba(15, 23, 42, 0.22);
+    }
+
+    .admin-sidebar-body {
+        padding: 18px 16px;
     }
 }
 

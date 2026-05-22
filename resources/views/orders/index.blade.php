@@ -13,7 +13,7 @@
 
         {{-- Daftar Pesanan --}}
         @if ($orders->count() > 0)
-            <div class="row g-4">
+            <div class="customer-orders-list">
                 @foreach ($orders as $order)
                     @php
                         $orderIndex = $loop->index;
@@ -25,16 +25,16 @@
 
                                 {{-- Gambar Produk --}}
                                 <div
-                                    class="col-md-3 text-center bg-light d-flex align-items-center justify-content-center p-3">
+                                    class="col-md-3 text-center d-flex align-items-center justify-content-center p-3 customer-order-media">
                                     @if ($order->product && $productImage)
                                         <img src="{{ $productImage->publicUrl() }}"
                                             alt="Foto produk {{ $order->product->name }}"
-                                            class="img-fluid rounded-3 shadow-sm admin-list-image"
+                                            class="img-fluid admin-list-image"
                                             width="160" height="160"
                                             @if ($orderIndex === 0) fetchpriority="high" @else loading="lazy" @endif
                                             decoding="async">
                                     @else
-                                        <div class="rounded-3 bg-white d-flex flex-column align-items-center justify-content-center admin-list-image">
+                                        <div class="customer-order-image-fallback d-flex flex-column align-items-center justify-content-center admin-list-image">
                                             <i class="bi bi-image text-muted fs-2"></i>
                                             <span class="small text-muted mt-2">Tidak Ada Gambar</span>
                                         </div>
@@ -42,38 +42,41 @@
                                 </div>
 
                                 {{-- Product details --}}
-                                <div class="col-md-6 p-3 d-flex flex-column justify-content-center">
-                                    <h5 class="fw-bold text-dark mb-1">
-                                        {{ $order->product->name ?? 'Produk Tidak Ditemukan' }}
-                                    </h5>
-                                    <p class="text-muted small mb-1">
-                                        {{ Str::limit($order->product->description ?? '-', 100) }}
-                                    </p>
-                                    <p class="mb-0 small">
-                                        <span class="fw-semibold">Varian:</span>
-                                        {{ $order->variant->size ?? '-' }} / {{ $order->variant->color ?? '-' }}
-                                    </p>
-                                    <p class="mb-0 small">
-                                        <span class="fw-semibold">Tanggal:</span>
-                                        {{ \Carbon\Carbon::parse($order->start_date)->format('d M Y') }}
-                                        s/d {{ \Carbon\Carbon::parse($order->end_date)->format('d M Y') }}
-                                    </p>
-                                    <p class="mb-0 small">
-                                        <span class="fw-semibold">Durasi:</span> {{ $order->rent_days }} hari
-                                    </p>
-                                        <h6 class="fw-bold mt-2 text-dark">
-                                        <i class="bi bi-cash-stack text-primary me-1"></i> Rp{{ number_format($order->total_price, 0, ',', '.') }}
-                                    </h6>
+                                <div class="col-md-6 customer-order-main">
+                                    <div class="customer-order-copy">
+                                        <div class="customer-order-kicker">Pesanan #{{ $order->id }}</div>
+                                        <h5 class="customer-order-title">
+                                            {{ $order->product->name ?? 'Produk Tidak Ditemukan' }}
+                                        </h5>
+                                        <p class="customer-order-description">
+                                            {{ Str::limit($order->product->description ?? '-', 110) }}
+                                        </p>
+                                    </div>
+
+                                    <div class="customer-order-meta">
+                                        <div>
+                                            <span>Varian</span>
+                                            <strong>{{ $order->variant->size ?? '-' }} / {{ $order->variant->color ?? '-' }}</strong>
+                                        </div>
+                                        <div>
+                                            <span>Periode</span>
+                                            <strong>
+                                                {{ \Carbon\Carbon::parse($order->start_date)->format('d M') }}
+                                                - {{ \Carbon\Carbon::parse($order->end_date)->format('d M Y') }}
+                                            </strong>
+                                        </div>
+                                        <div>
+                                            <span>Durasi</span>
+                                            <strong>{{ $order->rent_days }} hari</strong>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {{-- Status and buttons --}}
-                                {{-- Status and buttons --}}
                                 <div
-                                    class="col-md-3 d-flex flex-column align-items-center justify-content-center bg-white p-3 border-start order-card-right">
-                                    {{-- Wrapper for all elements --}}
-                                    <div class="d-flex flex-column align-items-center justify-content-center gap-2 w-100">
+                                    class="col-md-3 d-flex flex-column justify-content-center customer-order-side order-card-right">
+                                    <div class="customer-order-side-inner">
 
-                                        {{-- Badge Status --}}
                                         @php
                                             $statusClass = match ($order->order_status) {
                                                 'pending' => 'warning',
@@ -102,22 +105,25 @@
                                             };
                                         @endphp
 
-                                        {{-- Status --}}
-                                        <div class="d-flex flex-column align-items-center gap-2 w-100">
+                                        <div class="customer-order-status">
                                             <span class="admin-status-badge admin-status-{{ $statusClass }}">
                                                 {{ $statusLabel }}
                                             </span>
-
                                             <span class="admin-status-badge admin-status-{{ $paymentClass }}">
                                                 {{ $paymentLabel }}
                                             </span>
                                         </div>
 
-                                        {{-- Buttons --}}
-                                        <div class="d-flex justify-content-center align-items-center gap-2 mt-2">
+                                        <div class="customer-order-total">
+                                            <span>Total</span>
+                                            <strong>Rp{{ number_format($order->total_price, 0, ',', '.') }}</strong>
+                                        </div>
+
+                                        <div class="customer-order-actions">
                                             <a href="{{ route('penyewa.orders.show', $order->id) }}"
-                                                class="btn-action btn-dark" aria-label="Lihat detail pesanan {{ $order->id }}">
-                                                <i class="bi bi-eye"></i>
+                                                class="btn btn-dark rounded-pill customer-order-detail"
+                                                aria-label="Lihat detail pesanan {{ $order->id }}">
+                                                <i class="bi bi-eye me-1"></i> Detail
                                             </a>
 
                                             <form action="{{ route('penyewa.orders.destroy', $order->id) }}" method="POST"
@@ -126,7 +132,7 @@
                                                 data-confirm-label="Hapus Pesanan">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn-action btn-danger"
+                                                <button type="submit" class="btn btn-light text-danger rounded-pill customer-order-delete"
                                                     aria-label="Hapus pesanan {{ $order->id }}">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -146,12 +152,15 @@
             </div>
         @else
             {{-- Jika Tidak Ada Pesanan --}}
-            <div class="admin-empty-state">
-                <i class="bi bi-box-seam text-muted opacity-25 d-block mb-3"></i>
-                <h6 class="text-dark fw-bold mb-1">Belum ada pesanan</h6>
-                <p class="text-muted small">Belum ada pesanan yang dibuat.</p>
-                <a href="{{ route('penyewa.orders.create') }}" class="btn btn-dark rounded-pill px-4">
-                    <i class="bi bi-shop"></i> Mulai Sewa Sekarang
+            <div class="customer-orders-empty">
+                <div class="customer-orders-empty__icon">
+                    <i class="bi bi-bag-check"></i>
+                </div>
+                <span class="admin-page-eyebrow">Belum Ada Aktivitas</span>
+                <h2>Belum ada pesanan</h2>
+                <p>Pilih produk dari katalog Sewana, tentukan varian dan tanggal sewa, lalu semua status pesanan akan tampil di sini.</p>
+                <a href="{{ route('penyewa.products.index') }}" class="btn btn-dark rounded-pill px-4">
+                    <i class="bi bi-shop me-2"></i> Jelajahi Produk
                 </a>
             </div>
         @endif

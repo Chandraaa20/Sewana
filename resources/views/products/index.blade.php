@@ -24,12 +24,12 @@
         {{-- SEARCH SECTION --}}
         <form method="GET"
             action="{{ auth()->user()->hasRole('pegawai') ? route('pegawai.products.index') : route('pemilik.products.index') }}"
-            class="admin-toolbar">
-            <div class="input-group admin-search-box">
+            class="admin-toolbar search-card filter-card search-form">
+            <div class="input-group admin-search-box search-input-wrap">
                 <span class="input-group-text bg-white border-0 ps-4">
                     <i class="bi bi-search text-muted"></i>
                 </span>
-                <input type="text" name="search" class="form-control border-0 shadow-none py-2"
+                <input type="text" name="search" class="form-control border-0 shadow-none py-2 search-input"
                     placeholder="Cari nama atau deskripsi produk..." value="{{ request('search') }}"
                     aria-label="Cari nama atau deskripsi produk">
             </div>
@@ -40,7 +40,7 @@
                         Reset
                     </a>
                 @endif
-                <button class="btn btn-dark rounded-pill px-4 fw-bold" type="submit">Cari</button>
+                <button class="btn btn-dark rounded-pill px-4 fw-bold search-button" type="submit">Cari</button>
             </div>
         </form>
 

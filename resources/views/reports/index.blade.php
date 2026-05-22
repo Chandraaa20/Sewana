@@ -16,9 +16,9 @@
         </div>
 
         {{-- Date filter --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4 d-print-none">
+        <div class="card border-0 shadow-sm rounded-4 mb-4 d-print-none filter-card">
             <div class="card-body p-4">
-                <form method="GET" class="row g-3">
+                <form method="GET" class="row g-3 search-form">
                     <div class="col-md-5">
                         <label class="form-label fw-semibold small text-muted text-uppercase">Tanggal Mulai</label>
                         <input type="date" name="start_date" value="{{ $start->format('Y-m-d') }}"
@@ -30,7 +30,7 @@
                             class="form-control border-light-subtle shadow-none">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">
+                        <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm search-button">
                             <i class="bi bi-filter me-1"></i> Filter
                         </button>
                     </div>
