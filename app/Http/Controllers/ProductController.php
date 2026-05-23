@@ -16,14 +16,18 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->input('search');
+        $search = trim((string) $request->input('search', ''));
 
         $products = Product::with(['variants', 'images'])
             ->when($search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
             })
-            ->paginate(8);
+            ->paginate(8)
+            ->withQueryString();
 
         return view('products.index', compact('products'));
     }
@@ -245,7 +249,7 @@ class ProductController extends Controller
      */
     public function listForCustomer(Request $request)
     {
-        $search = $request->input('search');
+        $search = trim((string) $request->input('search', ''));
 
         $products = Product::with(['images', 'variants'])
             ->where('status', 'active')
@@ -255,10 +259,12 @@ class ProductController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%");
                 });
             })
-            ->paginate(8);
+            ->paginate(8)
+            ->withQueryString();
 
         return view('products.customer', compact('products'));
     }

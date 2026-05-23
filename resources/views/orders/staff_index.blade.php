@@ -58,6 +58,14 @@
                             default => 'Tidak Diketahui',
                         };
                         $customerLabel = $order->customer_name ?: $order->user->name ?? 'Tidak Diketahui';
+                        $isOnlineOrder = $order->source === 'online';
+                        $canApproveOrder = $status === 'pending' && (! $isOnlineOrder || $order->payment_status === 'paid');
+                        $paymentApprovalInfo = match ($order->payment_status) {
+                            'pending' => 'Menunggu pembayaran penyewa',
+                            'failed' => 'Pembayaran penyewa gagal',
+                            'expired' => 'Pembayaran penyewa kedaluwarsa',
+                            default => 'Status pembayaran belum valid',
+                        };
                     @endphp
 
                     <div class="col-12">
@@ -131,9 +139,12 @@
                                                     @if ($order->payment_status === 'paid')
                                                         <p class="fw-bold text-success mb-0"><i
                                                                 class="bi bi-check2-circle"></i> Sudah Dibayar</p>
-                                                    @else
+                                                    @elseif ($order->payment_status === 'pending')
                                                         <p class="fw-bold text-danger mb-0"><i class="bi bi-x-circle"></i>
                                                             Belum Dibayar</p>
+                                                    @else
+                                                        <p class="fw-bold text-danger mb-0"><i class="bi bi-x-circle"></i>
+                                                            Status Pembayaran Bermasalah</p>
                                                     @endif
                                                 </div>
                                             </div>
@@ -159,10 +170,16 @@
                                     </a>
 
                                     @if ($status === 'pending')
-                                        <button class="btn btn-primary rounded-3 mb-2 w-100 fw-semibold shadow-sm"
-                                            data-bs-toggle="modal" data-bs-target="#approveModal{{ $order->id }}">
-                                            <i class="bi bi-check-lg"></i> Setujui
-                                        </button>
+                                        @if ($canApproveOrder)
+                                            <button class="btn btn-primary rounded-3 mb-2 w-100 fw-semibold shadow-sm"
+                                                data-bs-toggle="modal" data-bs-target="#approveModal{{ $order->id }}">
+                                                <i class="bi bi-check-lg"></i> Setujui
+                                            </button>
+                                        @else
+                                            <div class="alert alert-warning rounded-3 small mb-2">
+                                                <i class="bi bi-hourglass-split me-1"></i> {{ $paymentApprovalInfo }}
+                                            </div>
+                                        @endif
 
                                         <form action="{{ route('pegawai.orders.reject', $order->id) }}" method="POST"
                                             data-confirm data-confirm-title="Tolak pesanan?"
@@ -175,62 +192,87 @@
                                             </button>
                                         </form>
 
-                                        <div class="modal fade" id="approveModal{{ $order->id }}" tabindex="-1">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content rounded-4 border-0 shadow">
-                                                    <form action="{{ route('pegawai.orders.approve', $order->id) }}"
-                                                        method="POST" enctype="multipart/form-data">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <div class="modal-header border-bottom-0 pb-0">
-                                                            <h5 class="modal-title fw-bold">Unggah Bukti Transaksi</h5>
-                                                            <button type="button" class="btn-close"
-                                                                data-bs-dismiss="modal"
-                                                                aria-label="Tutup unggah bukti transaksi"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <p class="text-muted small mb-3">Silakan unggah bukti bahwa
-                                                                barang sudah disetujui untuk disewa atau diambil.</p>
-                                                            <input type="file" name="bukti" class="form-control mb-2"
-                                                                accept="image/jpeg,image/png,image/webp"
-                                                                required onchange="preview{{ $order->id }}(event)"
-                                                                aria-label="Unggah bukti transaksi pesanan {{ $order->id }}">
-                                                            <div class="admin-form-help mb-3">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</div>
-                                                            @error('bukti')
-                                                                <div class="admin-field-error mb-3">{{ $message }}</div>
-                                                            @enderror
-
-                                                            <div class="text-center bg-light rounded-3 p-2 admin-upload-preview">
-                                                                <img id="img{{ $order->id }}" class="rounded"
-                                                                    alt="Pratinjau bukti transaksi" width="320" height="240"
-                                                                    decoding="async">
-                                                                <span id="placeholder{{ $order->id }}"
-                                                                    class="text-muted d-block mt-5"><i
-                                                                        class="bi bi-image fs-3"></i><br>Pratinjau
-                                                                    Bukti</span>
+                                        @if ($canApproveOrder)
+                                            <div class="modal fade" id="approveModal{{ $order->id }}" tabindex="-1">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content rounded-4 border-0 shadow">
+                                                        <form action="{{ route('pegawai.orders.approve', $order->id) }}"
+                                                            method="POST" enctype="multipart/form-data">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <div class="modal-header border-bottom-0 pb-0">
+                                                                <h5 class="modal-title fw-bold">
+                                                                    {{ $isOnlineOrder ? 'Setujui Pesanan Online' : 'Unggah Bukti Transaksi' }}
+                                                                </h5>
+                                                                <button type="button" class="btn-close"
+                                                                    data-bs-dismiss="modal"
+                                                                    aria-label="Tutup persetujuan pesanan"></button>
                                                             </div>
-                                                        </div>
-                                                        <div class="modal-footer border-top-0 pt-0">
-                                                            <button type="button" class="btn btn-light rounded-3"
-                                                                data-bs-dismiss="modal">Tutup</button>
-                                                            <button type="submit"
-                                                                class="btn btn-primary rounded-3 px-4">Kirim &
-                                                                Setujui</button>
-                                                        </div>
-                                                    </form>
+                                                            <div class="modal-body">
+                                                                @if ($isOnlineOrder)
+                                                                    <p class="text-muted small mb-3">
+                                                                        Pembayaran sudah selesai. Bukti pembayaran online
+                                                                        berasal dari payment reference, payload gateway,
+                                                                        dan waktu pembayaran.
+                                                                    </p>
+                                                                    <div class="bg-light rounded-3 p-3 small">
+                                                                        <div class="d-flex justify-content-between gap-3 mb-2">
+                                                                            <span class="text-muted">Reference</span>
+                                                                            <span class="fw-semibold text-end">{{ $order->payment_reference ?? '-' }}</span>
+                                                                        </div>
+                                                                        <div class="d-flex justify-content-between gap-3">
+                                                                            <span class="text-muted">Dibayar pada</span>
+                                                                            <span class="fw-semibold text-end">
+                                                                                {{ $order->paid_at?->format('d M Y, H:i') ?? '-' }}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                @else
+                                                                    <p class="text-muted small mb-3">Silakan unggah bukti bahwa
+                                                                        barang sudah disetujui untuk disewa atau diambil.</p>
+                                                                    <input type="file" name="bukti" class="form-control mb-2"
+                                                                        accept="image/*" capture="environment"
+                                                                        required onchange="preview{{ $order->id }}(event)"
+                                                                        aria-label="Unggah bukti transaksi pesanan {{ $order->id }}">
+                                                                    <div class="admin-form-help mb-3">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</div>
+                                                                    @error('bukti')
+                                                                        <div class="admin-field-error mb-3">{{ $message }}</div>
+                                                                    @enderror
+
+                                                                    <div class="text-center bg-light rounded-3 p-2 admin-upload-preview">
+                                                                        <img id="img{{ $order->id }}" class="rounded"
+                                                                            alt="Pratinjau bukti transaksi" width="320" height="240"
+                                                                            decoding="async">
+                                                                        <span id="placeholder{{ $order->id }}"
+                                                                            class="text-muted d-block mt-5"><i
+                                                                                class="bi bi-image fs-3"></i><br>Pratinjau
+                                                                            Bukti</span>
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                            <div class="modal-footer border-top-0 pt-0">
+                                                                <button type="button" class="btn btn-light rounded-3"
+                                                                    data-bs-dismiss="modal">Tutup</button>
+                                                                <button type="submit"
+                                                                    class="btn btn-primary rounded-3 px-4">Setujui</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <script>
-                                            function preview{{ $order->id }}(e) {
-                                                let img = document.getElementById('img{{ $order->id }}');
-                                                let placeholder = document.getElementById('placeholder{{ $order->id }}');
-                                                img.src = URL.createObjectURL(e.target.files[0]);
-                                                img.style.display = 'block';
-                                                placeholder.style.display = 'none';
-                                            }
-                                        </script>
+                                            @unless ($isOnlineOrder)
+                                                <script>
+                                                    function preview{{ $order->id }}(e) {
+                                                        let img = document.getElementById('img{{ $order->id }}');
+                                                        let placeholder = document.getElementById('placeholder{{ $order->id }}');
+                                                        img.src = URL.createObjectURL(e.target.files[0]);
+                                                        img.style.display = 'block';
+                                                        placeholder.style.display = 'none';
+                                                    }
+                                                </script>
+                                            @endunless
+                                        @endif
                                     @endif
                                 </div>
 

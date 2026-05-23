@@ -12,12 +12,14 @@ class UserController extends Controller
     public function index(Request $request)
     {
         // Add search support.
-        $search = $request->input('search');
+        $search = trim((string) $request->input('search', ''));
 
         $users = User::with('roles')
             ->when($search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             })
             ->paginate(10) // Paginate users.
             ->withQueryString();

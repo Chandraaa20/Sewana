@@ -100,7 +100,9 @@
                                             };
                                             $paymentLabel = match ($order->payment_status) {
                                                 'paid' => 'Sudah Dibayar',
-                                                'unpaid' => 'Belum Dibayar',
+                                                'pending' => 'Belum Dibayar',
+                                                'failed' => 'Pembayaran Gagal',
+                                                'expired' => 'Pembayaran Kedaluwarsa',
                                                 default => 'Tidak Diketahui',
                                             };
                                         @endphp

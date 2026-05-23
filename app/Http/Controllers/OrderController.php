@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\PaymentGatewayService;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,12 +33,17 @@ class OrderController extends Controller
     /** Manage orders for staff. */
     public function staffIndex(Request $request)
     {
+        $search = trim((string) $request->input('search', ''));
+
         $orders = Order::with(['user', 'product.images', 'variant'])
             ->whereNotIn('order_status', ['returned', 'cancelled'])
-            ->when($request->search, function ($query, $search) {
+            ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
-                    $q->whereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$search}%"))
+                    $q->whereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('product', fn($pq) => $pq
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('sku', 'like', "%{$search}%"))
+                        ->when(ctype_digit($search), fn($idQuery) => $idQuery->orWhere('id', (int) $search))
                         ->orWhere('customer_name', 'like', "%{$search}%");
                 });
             })
@@ -47,11 +57,16 @@ class OrderController extends Controller
     /** Show all rentals for staff. */
     public function aOrders(Request $request)
     {
+        $search = trim((string) $request->input('search', ''));
+
         $orders = Order::with(['user', 'product.images', 'variant'])
-            ->when($request->search, function ($query, $search) {
+            ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
-                    $q->whereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$search}%"))
+                    $q->whereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('product', fn($pq) => $pq
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('sku', 'like', "%{$search}%"))
+                        ->when(ctype_digit($search), fn($idQuery) => $idQuery->orWhere('id', (int) $search))
                         ->orWhere('customer_name', 'like', "%{$search}%");
                 });
             })
@@ -79,7 +94,7 @@ class OrderController extends Controller
     }
 
     /** Store an online customer order. */
-    public function store(Request $request)
+    public function store(Request $request, PaymentGatewayService $paymentGateway)
     {
         $today = now()->toDateString();
 
@@ -94,7 +109,7 @@ class OrderController extends Controller
             ],
             'customer_name' => 'required|string|max:255',
             'identity_photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
-            'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:'.$today],
+            'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'address' => 'required|string|max:255',
         ], [
@@ -116,7 +131,7 @@ class OrderController extends Controller
             'address.required' => 'Alamat pengiriman atau penjemputan wajib diisi.',
         ]);
 
-        return DB::transaction(function () use ($request) {
+        return DB::transaction(function () use ($request, $paymentGateway) {
             $variant = ProductVariant::lockForUpdate()->findOrFail($request->variant_id);
 
             if ((int) $variant->product_id !== (int) $request->product_id) {
@@ -134,7 +149,7 @@ class OrderController extends Controller
             $totalPrice = $variant->price * $rentDays;
             $photoPath = $request->file('identity_photo')->store('identity_photos', 'public');
 
-            Order::create([
+            $order = Order::create([
                 'user_id' => Auth::id(),
                 'customer_name' => $request->customer_name,
                 'identity_photo' => $photoPath,
@@ -147,12 +162,19 @@ class OrderController extends Controller
                 'price_per_day' => $variant->price,
                 'total_price' => $totalPrice,
                 'order_status' => 'pending',
-                'payment_status' => 'unpaid',
+                'payment_status' => 'pending',
                 'address' => $request->address,
             ]);
 
-            return redirect()->route('penyewa.orders.index')
-                ->with('success', 'Pesanan berhasil dibuat dan menunggu konfirmasi staf.');
+            $payment = $paymentGateway->createPayment($order);
+
+            $order->update([
+                'payment_gateway' => $payment['gateway'],
+                'payment_reference' => $payment['reference'],
+            ]);
+
+            return redirect($payment['payment_url'])
+                ->with('success', 'Pesanan berhasil dibuat. Silakan ikuti instruksi pembayaran.');
         });
     }
 
@@ -167,7 +189,6 @@ class OrderController extends Controller
     /** Store an offline staff order. */
     public function storeOffline(Request $request)
     {
-        // ADD AUTHORIZATION CHECK
         if (! Auth::user()->hasAnyRole(['pegawai', 'pemilik'])) {
             abort(403, 'Hanya staf dan pemilik yang bisa membuat pesanan offline.');
         }
@@ -186,7 +207,7 @@ class OrderController extends Controller
                         ->where('stock', '>', 0);
                 }),
             ],
-            'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:'.$today],
+            'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'address' => 'required|string|max:255',
         ], [
@@ -252,7 +273,9 @@ class OrderController extends Controller
                 'price_per_day' => $variant->price,
                 'total_price' => $totalPrice,
                 'order_status' => 'rented',
+                'payment_method' => 'manual',
                 'payment_status' => 'paid',
+                'paid_at' => now(),
                 'address' => $request->address,
             ]);
 
@@ -281,6 +304,17 @@ class OrderController extends Controller
                 return back()->with('error', 'Pesanan sudah diproses.');
             }
 
+            if ($order->source === 'online' && $order->payment_status !== 'paid') {
+                $message = match ($order->payment_status) {
+                    'pending' => 'Menunggu pembayaran penyewa sebelum pesanan dapat disetujui.',
+                    'failed' => 'Pembayaran penyewa gagal. Pesanan tidak dapat disetujui.',
+                    'expired' => 'Pembayaran penyewa kedaluwarsa. Pesanan tidak dapat disetujui.',
+                    default => 'Status pembayaran belum valid untuk menyetujui pesanan.',
+                };
+
+                return back()->with('error', $message);
+            }
+
             if (! $order->variant_id) {
                 return back()->with('error', 'Pesanan varian tidak valid.');
             }
@@ -292,7 +326,7 @@ class OrderController extends Controller
                 return back()->with('error', 'Gagal menyetujui: stok barang saat ini sudah habis.');
             }
 
-            if ($request->hasFile('bukti')) {
+            if ($request->hasFile('bukti') && $order->source !== 'online') {
                 $path = $request->file('bukti')->store('bukti', 'public');
                 $order->bukti_pembayaran = $path;
             }
@@ -313,7 +347,7 @@ class OrderController extends Controller
     public function handover(Request $request, $id)
     {
         $request->validate([
-            'payment_status' => 'nullable|in:paid,unpaid',
+            'payment_status' => 'nullable|in:paid,pending',
         ]);
 
         DB::transaction(function () use ($request, $id) {
@@ -323,7 +357,7 @@ class OrderController extends Controller
                 abort(400, 'Pesanan harus berstatus disetujui sebelum diserahkan.');
             }
 
-            $payment = $request->input('payment_status', 'unpaid');
+            $payment = $request->input('payment_status', 'pending');
 
             // Do not decrement stock here because it was already decremented during approval.
             $order->update([
@@ -405,15 +439,32 @@ class OrderController extends Controller
         }
 
         $order = $query->findOrFail($id);
+        $verificationUrl = null;
+        $verificationQrCodeSvg = null;
 
-        return view('orders.show', compact('order'));
+        if (filled($order->validation_token)) {
+            $verificationUrl = route('transactions.verify', $order->validation_token);
+            $verificationQrCodeSvg = $this->generateQrCodeSvg($verificationUrl);
+        }
+
+        return view('orders.show', compact('order', 'verificationUrl', 'verificationQrCodeSvg'));
+    }
+
+    private function generateQrCodeSvg(string $content): string
+    {
+        $renderer = new ImageRenderer(
+            new RendererStyle(180),
+            new SvgImageBackEnd()
+        );
+
+        return (new Writer($renderer))->writeString($content);
     }
 
     /** Update payment status. */
     public function updatePaymentStatus(Request $request, $id)
     {
         $request->validate([
-            'payment_status' => 'required|in:paid,unpaid',
+            'payment_status' => 'required|in:paid,pending',
         ]);
 
         // ADD AUTHORIZATION CHECK
@@ -429,8 +480,8 @@ class OrderController extends Controller
 
         // VALIDATE TRANSITION
         $allowedTransitions = [
-            'unpaid' => ['paid'],
-            'paid' => ['unpaid'],
+            'pending' => ['paid'],
+            'paid' => ['pending'],
         ];
 
         $currentStatus = $order->payment_status;

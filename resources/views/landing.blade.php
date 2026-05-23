@@ -46,8 +46,8 @@
             <h1>Sewa Mudah,<br>Tampil Mewah.</h1>
             <p>Platform penyewaan busana premium dan perlengkapan acara. Temukan koleksi terbaik, cek ketersediaan
                 secara langsung, dan sewa dalam hitungan detik.</p>
-            <div>
-                <a href="{{ route('register') }}" class="btn btn-primary-custom me-3">Mulai Menjelajah</a>
+            <div class="hero-actions">
+                <a href="{{ route('register') }}" class="btn btn-primary-custom">Mulai Menjelajah</a>
                 <a href="#katalog" class="btn btn-outline-light nav-btn py-3 px-4">Lihat Koleksi</a>
             </div>
         </div>
@@ -59,7 +59,7 @@
             <p class="section-subtitle">Didesain untuk memberikan pengalaman sewa yang tak terlupakan.</p>
 
             <div class="row g-4 text-start">
-                <div class="col-md-4">
+                <div class="col-12 col-md-6 col-xl-4">
                     <div class="feature-card">
                         <div class="feature-icon"><i class="bi bi-box-seam"></i></div>
                         <h4 class="fw-bold mb-3 text-white">Katalog Premium</h4>
@@ -67,7 +67,7 @@
                             hingga jas formal, semua ada di sini.</p>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md-6 col-xl-4">
                     <div class="feature-card">
                         <div class="feature-icon feature-icon-success"><i
                                 class="bi bi-lightning-charge"></i></div>
@@ -76,7 +76,7 @@
                             pesanan Anda tanpa harus menunggu balasan admin.</p>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-12 col-md-6 col-xl-4">
                     <div class="feature-card">
                         <div class="feature-icon feature-icon-purple"><i
                                 class="bi bi-shield-check"></i></div>
@@ -91,7 +91,7 @@
 
     <section class="py-5 mt-5" id="katalog">
         <div class="container">
-            <div class="d-flex justify-content-between align-items-end mb-5">
+            <div class="catalog-heading d-flex justify-content-between align-items-end mb-5">
                 <div>
                     <h2 class="section-title mb-0">Koleksi Terpopuler</h2>
                     <p class="text-secondary mt-2 mb-0">Baju incaran yang paling sering disewa minggu ini.</p>
@@ -105,7 +105,7 @@
                     @php
                         $productImage = $product->firstAvailableImage();
                     @endphp
-                    <div class="col-6 col-lg-3">
+                    <div class="col-12 col-sm-6 col-lg-3">
                         <a href="{{ route('login') }}" class="text-decoration-none">
                             <div class="product-card">
                                 <div class="product-img-wrapper">
@@ -174,4 +174,13 @@
             </div>
             <p class="mb-4">Solusi modern untuk manajemen dan penyewaan busana Anda.</p>
             <div class="d-flex justify-content-center gap-3 mb-4">
+                <a href="{{ route('login') }}" class="btn btn-link text-secondary text-decoration-none">Masuk</a>
+                <a href="{{ route('register') }}" class="btn btn-link text-secondary text-decoration-none">Daftar</a>
+            </div>
+            <p class="small mb-0">&copy; {{ date('Y') }} Sewana. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+
+</html>
 

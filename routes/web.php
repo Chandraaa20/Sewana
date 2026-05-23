@@ -7,7 +7,9 @@ use App\Http\Controllers\{
     ProductController,
     DashboardController,
     LandingController,
-    OrderController
+    OrderController,
+    PaymentInstructionController,
+    TransactionVerificationController
 };
 
 /*
@@ -17,6 +19,8 @@ use App\Http\Controllers\{
 */
 
 Route::get('/', LandingController::class)->name('landing');
+Route::get('/verify-transaction/{token}', TransactionVerificationController::class)
+    ->name('transactions.verify');
 
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +98,12 @@ Route::middleware('auth')->group(function () {
                 Route::get('/', 'index')->name('index');
                 Route::get('/create', 'create')->name('create');
                 Route::post('/store', 'store')->name('store');
+                Route::get('/{id}/payment/instructions', [PaymentInstructionController::class, 'show'])
+                    ->name('payment.instructions');
+                if (app()->environment(['local', 'development', 'testing'])) {
+                    Route::post('/{id}/payment/simulate-success', [PaymentInstructionController::class, 'simulateSuccess'])
+                        ->name('payment.simulate-success');
+                }
                 Route::get('/{id}', 'show')->name('show');
                 Route::delete('/{id}', 'destroy')->name('destroy');
             });

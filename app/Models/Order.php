@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -23,10 +24,41 @@ class Order extends Model
         'price_per_day',
         'total_price',
         'order_status',
+        'payment_method',
         'payment_status',
+        'payment_reference',
+        'payment_gateway',
+        'payment_payload',
+        'validation_token',
+        'paid_at',
         'address',
         'bukti_pembayaran'
     ];
+
+    protected $casts = [
+        'payment_payload' => 'array',
+        'paid_at' => 'datetime',
+    ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order) {
+            if (filled($order->validation_token)) {
+                return;
+            }
+
+            $order->validation_token = self::generateValidationToken();
+        });
+    }
+
+    private static function generateValidationToken(): string
+    {
+        do {
+            $token = Str::random(64);
+        } while (self::query()->where('validation_token', $token)->exists());
+
+        return $token;
+    }
 
     /**
      * User that owns this order.

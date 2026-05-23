@@ -742,7 +742,8 @@
 }
 
 .admin-toolbar.search-form .search-input {
-    width: 100%;
+    flex: 1 1 auto;
+    width: 1%;
     min-width: 0;
     height: 100%;
     min-height: 0;

@@ -53,13 +53,15 @@
                 {{-- Identity photo --}}
                 <div class="col-md-6">
                     <label class="form-label admin-form-label">Foto Identitas (KTP/SIM)</label>
-                    <input type="file" name="identity_photo" class="form-control" accept="image/*" required>
-                    <small class="text-muted">jpg / jpeg / png, maks. 10 MB</small>
+                    <input type="file" name="identity_photo" class="form-control"
+                        accept="image/*" capture="environment" required>
+                    <small class="text-muted">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label admin-form-label">Bukti Pembayaran</label>
-                    <input type="file" name="bukti" class="form-control" accept="image/*">
-                    <small class="text-muted">opsional</small>
+                    <input type="file" name="bukti" class="form-control"
+                        accept="image/*" capture="environment">
+                    <small class="text-muted">Opsional. Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
                 </div>
                 {{-- Product --}}
                 <div class="col-md-6">

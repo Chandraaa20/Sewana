@@ -103,7 +103,7 @@
                             <div class="mb-3">
                                 <label class="form-label fw-semibold" for="identity-photo">Unggah Foto Identitas (KTP / SIM)</label>
                                 <input type="file" id="identity-photo" name="identity_photo" class="form-control"
-                                    accept="image/jpeg,image/png,image/webp" required>
+                                    accept="image/*" capture="environment" required>
                                 <small class="text-muted">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
                                 @error('identity_photo')
                                     <div class="admin-field-error">{{ $message }}</div>

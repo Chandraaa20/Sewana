@@ -35,9 +35,28 @@
                 default => ['color' => 'secondary', 'label' => 'Tidak Diketahui', 'icon' => 'question-circle'],
             };
 
-            $paymentClass = $order->payment_status === 'paid' ? 'success' : 'danger';
-            $paymentLabel = $order->payment_status === 'paid' ? 'Sudah Dibayar' : 'Belum Dibayar';
+            $paymentClass = match ($order->payment_status) {
+                'paid' => 'success',
+                'pending' => 'danger',
+                'failed', 'expired' => 'danger',
+                default => 'secondary',
+            };
+            $paymentLabel = match ($order->payment_status) {
+                'paid' => 'Sudah Dibayar',
+                'pending' => 'Belum Dibayar',
+                'failed' => 'Pembayaran Gagal',
+                'expired' => 'Pembayaran Kedaluwarsa',
+                default => 'Tidak Diketahui',
+            };
             $paymentIcon = $order->payment_status === 'paid' ? 'check-circle' : 'x-circle';
+            $isOnlineOrder = $order->source === 'online';
+            $canApproveOrder = $status === 'pending' && (! $isOnlineOrder || $order->payment_status === 'paid');
+            $paymentApprovalInfo = match ($order->payment_status) {
+                'pending' => 'Menunggu pembayaran penyewa',
+                'failed' => 'Pembayaran penyewa gagal',
+                'expired' => 'Pembayaran penyewa kedaluwarsa',
+                default => 'Status pembayaran belum valid',
+            };
 
             $customerLabel = $order->customer_name ?: $order->user->name ?? 'Tidak Diketahui';
             $productName = $order->product->name ?? 'Produk Tidak Ditemukan';
@@ -233,6 +252,22 @@
                                     alt="Bukti pembayaran pesanan #{{ $order->id }}" width="640" height="420"
                                     loading="lazy" decoding="async">
                             </div>
+                        @elseif ($isOnlineOrder && ($order->payment_reference || $order->paid_at))
+                            <div class="bg-light rounded-4 p-3 border border-dashed">
+                                <p class="text-muted small mb-3">
+                                    Pembayaran online diverifikasi melalui payment gateway/dummy payment.
+                                </p>
+                                <div class="d-flex justify-content-between gap-3 small mb-2">
+                                    <span class="text-muted">Reference</span>
+                                    <span class="fw-semibold text-dark text-end">{{ $order->payment_reference ?? '-' }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 small">
+                                    <span class="text-muted">Dibayar pada</span>
+                                    <span class="fw-semibold text-dark text-end">
+                                        {{ $order->paid_at?->format('d M Y, H:i') ?? '-' }}
+                                    </span>
+                                </div>
+                            </div>
                         @else
                             <div class="text-center py-4 text-muted bg-light rounded-4 border border-dashed">
                                 <i class="bi bi-image fs-1 opacity-50 mb-2 d-block"></i>
@@ -241,6 +276,31 @@
                         @endif
                     </div>
                 </div>
+                {{-- QR Code Validasi Transaksi --}}
+                @if ($verificationUrl && $verificationQrCodeSvg)
+                    <div class="card shadow-sm border-0 rounded-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                                <h6 class="fw-bold text-dark mb-0">
+                                    <i class="bi bi-qr-code text-dark me-2"></i> Validasi Transaksi
+                                </h6>
+                            </div>
+
+                            <div class="d-flex flex-column flex-md-row align-items-center gap-4">
+                                <div class="bg-white border rounded-4 p-3 shadow-sm">
+                                    {!! $verificationQrCodeSvg !!}
+                                </div>
+                                <div class="text-center text-md-start">
+                                    <p class="fw-semibold text-dark mb-2">Pindai QR Code ini untuk memvalidasi transaksi.</p>
+                                    <a href="{{ $verificationUrl }}" target="_blank" rel="noopener"
+                                        class="small text-decoration-none">
+                                        Buka halaman validasi
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 {{-- Panel Aksi Staff --}}
                 @hasanyrole('pegawai|pemilik')
                     <div class="card shadow-sm border-0 rounded-4 border-start border-4 border-dark">
@@ -256,14 +316,20 @@
                                         <b>Setujui</b> untuk menyetujui, atau <b>Batalkan</b> jika tidak memenuhi syarat.
                                     </p>
                                     <div class="d-flex gap-2">
-                                        <form action="{{ route('pegawai.orders.approve', $order->id) }}" method="POST"
-                                            class="flex-grow-1">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button class="btn btn-success w-100 rounded-pill fw-semibold shadow-sm">
-                                                <i class="bi bi-check-lg me-1"></i> Setujui Pesanan
-                                            </button>
-                                        </form>
+                                        @if ($canApproveOrder)
+                                            <form action="{{ route('pegawai.orders.approve', $order->id) }}" method="POST"
+                                                class="flex-grow-1">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button class="btn btn-success w-100 rounded-pill fw-semibold shadow-sm">
+                                                    <i class="bi bi-check-lg me-1"></i> Setujui Pesanan
+                                                </button>
+                                            </form>
+                                        @else
+                                            <div class="alert alert-warning rounded-4 small mb-0 flex-grow-1">
+                                                <i class="bi bi-hourglass-split me-1"></i> {{ $paymentApprovalInfo }}
+                                            </div>
+                                        @endif
 
                                         <form action="{{ route('pegawai.orders.reject', $order->id) }}" method="POST"
                                             class="flex-grow-1" data-confirm data-confirm-title="Tolak pesanan?"
@@ -290,8 +356,8 @@
                                                 for="paymentSelect"><i class="bi bi-wallet2"></i></label>
                                             <select name="payment_status" id="paymentSelect"
                                                 class="form-select border-0 focus-ring focus-ring-light">
-                                                <option value="unpaid"
-                                                    {{ $order->payment_status === 'unpaid' ? 'selected' : '' }}>Tagihan Belum
+                                                <option value="pending"
+                                                    {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Tagihan Belum
                                                     Dibayar</option>
                                                 <option value="paid"
                                                     {{ $order->payment_status === 'paid' ? 'selected' : '' }}>Tagihan Sudah

@@ -55,7 +55,7 @@
                     <div class="full-span">
                         <label class="form-label admin-form-label" for="product-images">Foto Produk</label>
                         <input type="file" id="product-images" name="images[]" class="form-control"
-                            accept="image/jpeg,image/png,image/webp" multiple>
+                            accept="image/*" capture="environment" multiple>
                         <div class="admin-form-help mt-1">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB per file, hingga 10 gambar.</div>
                         @error('images')
                             <div class="admin-field-error">{{ $message }}</div>
