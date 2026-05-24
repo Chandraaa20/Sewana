@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -210,7 +211,8 @@ class OrderController extends Controller
             'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'address' => 'required|string|max:255',
-            'nominal_diterima' => 'required|numeric|min:0',
+            'payment_method' => 'required|in:cash,qris_dummy',
+            'nominal_diterima' => 'required_if:payment_method,cash|nullable|numeric|min:0',
         ], [
             'customer_name.required' => 'Nama pelanggan wajib diisi.',
             'identity_photo.required' => 'Foto identitas wajib diunggah.',
@@ -231,12 +233,14 @@ class OrderController extends Controller
             'end_date.date_format' => 'Format tanggal selesai sewa tidak valid.',
             'end_date.after_or_equal' => 'Tanggal selesai sewa tidak boleh sebelum tanggal mulai sewa.',
             'address.required' => 'Alamat wajib diisi.',
-            'nominal_diterima.required' => 'Nominal diterima wajib diisi.',
+            'payment_method.required' => 'Metode pembayaran wajib dipilih.',
+            'payment_method.in' => 'Metode pembayaran tidak valid.',
+            'nominal_diterima.required_if' => 'Nominal diterima wajib diisi untuk pembayaran tunai.',
             'nominal_diterima.numeric' => 'Nominal diterima harus berupa angka.',
             'nominal_diterima.min' => 'Nominal diterima tidak boleh kurang dari 0.',
         ]);
 
-        DB::transaction(function () use ($request) {
+        $order = DB::transaction(function () use ($request) {
             $variant = ProductVariant::lockForUpdate()->findOrFail($request->variant_id);
 
             if ((int) $variant->product_id !== (int) $request->product_id) {
@@ -257,13 +261,23 @@ class OrderController extends Controller
 
             $totalPrice = $variant->price * $rentDays;
             $totalAmount = (int) round($totalPrice);
-            $amountReceived = (int) round((float) $request->nominal_diterima);
+            $paymentMethod = $request->input('payment_method', 'cash');
 
-            if ($amountReceived < $totalAmount) {
-                throw ValidationException::withMessages([
-                    'nominal_diterima' => 'Nominal diterima tidak boleh kurang dari total pembayaran.',
-                ]);
+            $amountReceived = null;
+            $changeAmount = null;
+
+            if ($paymentMethod === 'cash') {
+                $amountReceived = (int) round((float) $request->nominal_diterima);
+
+                if ($amountReceived < $totalAmount) {
+                    throw ValidationException::withMessages([
+                        'nominal_diterima' => 'Nominal diterima tidak boleh kurang dari total pembayaran.',
+                    ]);
+                }
+
+                $changeAmount = $amountReceived - $totalAmount;
             }
+
             $photoPath = $request->file('identity_photo')->store('identity_photos', 'public');
 
             $paymentProofPath = null;
@@ -271,7 +285,7 @@ class OrderController extends Controller
                 $paymentProofPath = $request->file('bukti')->store('bukti', 'public');
             }
 
-            Order::create([
+            $order = Order::create([
                 'user_id' => Auth::id(),
                 'customer_name' => $request->customer_name,
                 'identity_photo' => $photoPath,
@@ -285,19 +299,35 @@ class OrderController extends Controller
                 'price_per_day' => $variant->price,
                 'total_price' => $totalPrice,
                 'amount_received' => $amountReceived,
-                'change_amount' => $amountReceived - $totalAmount,
-                'payment_method' => 'cash',
-                'order_status' => 'rented',
-                'payment_status' => 'paid',
-                'paid_at' => now(),
+                'change_amount' => $changeAmount,
+                'order_status' => $paymentMethod === 'cash' ? 'rented' : 'pending',
+                'payment_method' => $paymentMethod,
+                'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
+                'payment_gateway' => $paymentMethod === 'qris_dummy' ? 'dummy' : null,
+                'paid_at' => $paymentMethod === 'cash' ? now() : null,
                 'address' => $request->address,
             ]);
 
-            $variant->decrement('stock', 1);
+            if ($paymentMethod === 'cash') {
+                $variant->decrement('stock', 1);
+            }
+
+            if ($paymentMethod === 'qris_dummy') {
+                $order->update([
+                    'payment_reference' => sprintf('OFFLINE-DUMMY-%s-%s', $order->id, now()->timestamp),
+                ]);
+            }
+
+            return $order;
         });
 
         return redirect()->route('pegawai.orders.index')
-            ->with('success', 'Pesanan offline berhasil ditambahkan!');
+            ->with(
+                'success',
+                $order->payment_method === 'qris_dummy'
+                    ? 'Pesanan offline QRIS Dummy berhasil dibuat dan menunggu pembayaran.'
+                    : 'Pesanan offline tunai berhasil ditambahkan.'
+            );
     }
 
     /** Approve an order and decrement stock. */
@@ -531,7 +561,13 @@ class OrderController extends Controller
         if (! in_array($order->order_status, ['pending', 'cancelled'])) {
             return back()->with('error', 'Pesanan tidak bisa dihapus karena sudah diproses oleh staf.');
         }
+        if ($order->identity_photo) {
+            Storage::disk('public')->delete($order->identity_photo);
+        }
 
+        if ($order->bukti_pembayaran) {
+            Storage::disk('public')->delete($order->bukti_pembayaran);
+        }
         $order->delete();
 
         return redirect()->route('penyewa.orders.index')
