@@ -126,37 +126,65 @@
                             </small>
                         </div>
                     </div>
-                    {{-- Cash payment --}}
-                    <div class="col-md-6">
-                        <label for="nominal_diterima" class="form-label admin-form-label">
-                            Nominal Diterima <span class="text-danger">*</span>
-                        </label>
+                    <div>
 
-                        <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" name="nominal_diterima" id="nominal_diterima" class="form-control"
-                                min="0" step="1000" value="{{ old('nominal_diterima') }}"
-                                placeholder="Contoh: 150000" required>
+                        {{-- Payment method --}}
+                        <div class="col-md-6">
+                            <label for="payment_method" class="form-label admin-form-label">
+                                Metode Pembayaran <span class="text-danger">*</span>
+                            </label>
+
+                            <select name="payment_method" id="payment_method" class="form-select" required>
+                                <option value="cash" {{ old('payment_method', 'cash') === 'cash' ? 'selected' : '' }}>
+                                    Tunai
+                                </option>
+                                <option value="qris_dummy" {{ old('payment_method') === 'qris_dummy' ? 'selected' : '' }}>
+                                    QRIS Dummy
+                                </option>
+                            </select>
+
+                            @error('payment_method')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+
+                            <small class="text-muted">
+                                Pilih Tunai untuk pembayaran langsung, atau QRIS Dummy untuk simulasi pembayaran QR.
+                            </small>
                         </div>
 
-                        @error('nominal_diterima')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
+                        {{-- Cash payment --}}
+                        <div class="col-md-6" id="cash_payment_wrapper">
+                            <label for="nominal_diterima" class="form-label admin-form-label">
+                                Nominal Diterima <span class="text-danger">*</span>
+                            </label>
 
-                        <small class="text-muted">
-                            Masukkan jumlah uang yang diterima dari pelanggan.
-                        </small>
-                    </div>
-                    {{-- Submit --}}
-                    <div class="col-12">
-                        <div class="admin-form-actions">
-                            <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4">
-                                <i class="bi bi-save me-1"></i> Simpan Pesanan Offline
-                            </button>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="number" name="nominal_diterima" id="nominal_diterima" class="form-control"
+                                    min="0" step="1000" value="{{ old('nominal_diterima') }}"
+                                    placeholder="Contoh: 150000">
+                            </div>
+
+                            @error('nominal_diterima')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+
+                            <small class="text-muted">
+                                Wajib diisi untuk pembayaran tunai. Nominal harus sama atau lebih besar dari total
+                                pembayaran.
+                            </small>
+                        </div>
+
+                        {{-- Submit --}}
+                        <div class="col-12">
+                            <div class="admin-form-actions">
+                                <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4">
+                                    <i class="bi bi-save me-1"></i> Simpan Pesanan Offline
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
         </form>
     </div>
 
@@ -194,6 +222,9 @@
 
         const startInput = document.querySelector('input[name="start_date"]');
         const endInput = document.querySelector('input[name="end_date"]');
+        const paymentMethodSelect = document.getElementById('payment_method');
+        const cashPaymentWrapper = document.getElementById('cash_payment_wrapper');
+        const nominalDiterimaInput = document.getElementById('nominal_diterima');
 
         function formatRupiah(n) {
             if (typeof n !== 'number' || isNaN(n)) return '-';
@@ -241,6 +272,24 @@
             if (submitButton) {
                 submitButton.disabled = disabled;
             }
+        }
+
+        function updatePaymentMethodUI() {
+            if (!paymentMethodSelect || !cashPaymentWrapper || !nominalDiterimaInput) return;
+
+            const isCash = paymentMethodSelect.value === 'cash';
+
+            cashPaymentWrapper.style.display = isCash ? '' : 'none';
+            nominalDiterimaInput.required = isCash;
+
+            if (!isCash) {
+                nominalDiterimaInput.value = '';
+            }
+        }
+
+        if (paymentMethodSelect) {
+            paymentMethodSelect.addEventListener('change', updatePaymentMethodUI);
+            updatePaymentMethodUI();
         }
 
         function updateDateMinimum() {

@@ -338,7 +338,7 @@
                 @endif
                 {{-- Panel Aksi Staff --}}
                 @hasanyrole('pegawai|pemilik')
-                    <div class="card shadow-sm border-0 rounded-4 border-start border-4 border-dark">
+                    <div class="card shadow-sm  rounded-4 border-start border-4 border-dark">
                         <div class="card-body p-4">
                             <h6 class="fw-bold text-dark mb-3">
                                 <i class="bi bi-sliders me-2"></i> Tindakan Petugas
