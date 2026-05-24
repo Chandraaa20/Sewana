@@ -50,7 +50,7 @@
             };
             $paymentIcon = $order->payment_status === 'paid' ? 'check-circle' : 'x-circle';
             $isOnlineOrder = $order->source === 'online';
-            $canApproveOrder = $status === 'pending' && (! $isOnlineOrder || $order->payment_status === 'paid');
+            $canApproveOrder = $status === 'pending' && (!$isOnlineOrder || $order->payment_status === 'paid');
             $paymentApprovalInfo = match ($order->payment_status) {
                 'pending' => 'Menunggu pembayaran penyewa',
                 'failed' => 'Pembayaran penyewa gagal',
@@ -81,8 +81,8 @@
                         @if ($productImage)
                             <div class="d-flex justify-content-center align-items-center h-100">
                                 <img src="{{ $productImage }}" class="rounded-4 shadow-sm admin-detail-image"
-                                    alt="Foto produk {{ $productName }}" width="520" height="260"
-                                    fetchpriority="high" decoding="async">
+                                    alt="Foto produk {{ $productName }}" width="520" height="260" fetchpriority="high"
+                                    decoding="async">
                             </div>
                         @else
                             <div
@@ -149,6 +149,40 @@
                                     class="fw-bold text-primary fs-5">Rp{{ number_format($order->total_price, 0, ',', '.') }}</span>
                             </div>
                         </div>
+                        @if ($order->source === 'offline' && $order->payment_method === 'cash')
+                            <div class="border rounded-4 p-3 border-success border-opacity-25 mt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small">Metode Pembayaran</span>
+                                    <span class="fw-semibold text-dark">Tunai</span>
+                                </div>
+
+                                <hr class="text-muted opacity-25 my-2">
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small">Nominal Diterima</span>
+                                    <span class="fw-semibold text-dark">
+                                        Rp{{ number_format((int) $order->amount_received, 0, ',', '.') }}
+                                    </span>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small">Kembalian</span>
+                                    <span class="fw-semibold text-success">
+                                        Rp{{ number_format((int) $order->change_amount, 0, ',', '.') }}
+                                    </span>
+                                </div>
+
+                                @if ($order->paid_at)
+                                    <hr class="text-muted opacity-25 my-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">Dibayar pada</span>
+                                        <span class="fw-semibold text-dark">
+                                            {{ $order->paid_at->format('d M Y, H:i') }}
+                                        </span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -206,8 +240,8 @@
                                 <i class="bi bi-card-image text-primary me-2"></i> Foto Identitas (KTP/KTM)
                             </h6>
                             @if ($identityPhoto)
-                                <a class="btn btn-sm btn-outline-primary rounded-pill px-3" target="_blank"
-                                    rel="noopener" href="{{ $identityPhoto }}"
+                                <a class="btn btn-sm btn-outline-primary rounded-pill px-3" target="_blank" rel="noopener"
+                                    href="{{ $identityPhoto }}"
                                     aria-label="Perbesar foto identitas {{ $customerLabel }}">
                                     <i class="bi bi-arrows-fullscreen me-1"></i> Perbesar
                                 </a>
@@ -247,8 +281,7 @@
 
                         @if ($paymentProof)
                             <div class="text-center bg-light rounded-4 p-3 border border-dashed">
-                                <img src="{{ $paymentProof }}"
-                                    class="img-fluid rounded-3 shadow-sm admin-proof-image"
+                                <img src="{{ $paymentProof }}" class="img-fluid rounded-3 shadow-sm admin-proof-image"
                                     alt="Bukti pembayaran pesanan #{{ $order->id }}" width="640" height="420"
                                     loading="lazy" decoding="async">
                             </div>
@@ -259,7 +292,8 @@
                                 </p>
                                 <div class="d-flex justify-content-between gap-3 small mb-2">
                                     <span class="text-muted">Reference</span>
-                                    <span class="fw-semibold text-dark text-end">{{ $order->payment_reference ?? '-' }}</span>
+                                    <span
+                                        class="fw-semibold text-dark text-end">{{ $order->payment_reference ?? '-' }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between gap-3 small">
                                     <span class="text-muted">Dibayar pada</span>
@@ -291,7 +325,8 @@
                                     {!! $verificationQrCodeSvg !!}
                                 </div>
                                 <div class="text-center text-md-start">
-                                    <p class="fw-semibold text-dark mb-2">Pindai QR Code ini untuk memvalidasi transaksi.</p>
+                                    <p class="fw-semibold text-dark mb-2">Pindai QR Code ini untuk memvalidasi transaksi.
+                                    </p>
                                     <a href="{{ $verificationUrl }}" target="_blank" rel="noopener"
                                         class="small text-decoration-none">
                                         Buka halaman validasi
@@ -387,12 +422,14 @@
                                     {{-- Jika RETURNED atau CANCELLED --}}
                                 @else
                                     <div class="text-center py-3">
-                                        <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle admin-icon-box mb-2">
+                                        <div
+                                            class="bg-secondary bg-opacity-10 text-secondary rounded-circle admin-icon-box mb-2">
                                             <i class="bi bi-lock-fill fs-4"></i>
                                         </div>
                                         <h6 class="fw-bold text-dark mb-1">Pesanan Ditutup</h6>
                                         <p class="text-muted small mb-0">Pesanan ini berstatus
-                                            <b>{{ strtoupper($statusData['label']) }}</b> dan tidak memerlukan aksi lebih lanjut.
+                                            <b>{{ strtoupper($statusData['label']) }}</b> dan tidak memerlukan aksi lebih
+                                            lanjut.
                                         </p>
                                     </div>
                                 @endif
@@ -407,4 +444,3 @@
 
     {{-- Sedikit CSS untuk mempercantik border dashed foto --}}
 @endsection
-

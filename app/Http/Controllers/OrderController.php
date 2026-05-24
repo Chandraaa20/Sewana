@@ -210,6 +210,7 @@ class OrderController extends Controller
             'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'address' => 'required|string|max:255',
+            'nominal_diterima' => 'required|numeric|min:0',
         ], [
             'customer_name.required' => 'Nama pelanggan wajib diisi.',
             'identity_photo.required' => 'Foto identitas wajib diunggah.',
@@ -230,6 +231,9 @@ class OrderController extends Controller
             'end_date.date_format' => 'Format tanggal selesai sewa tidak valid.',
             'end_date.after_or_equal' => 'Tanggal selesai sewa tidak boleh sebelum tanggal mulai sewa.',
             'address.required' => 'Alamat wajib diisi.',
+            'nominal_diterima.required' => 'Nominal diterima wajib diisi.',
+            'nominal_diterima.numeric' => 'Nominal diterima harus berupa angka.',
+            'nominal_diterima.min' => 'Nominal diterima tidak boleh kurang dari 0.',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -252,6 +256,14 @@ class OrderController extends Controller
             $rentDays = $start->diffInDays($end) + 1;
 
             $totalPrice = $variant->price * $rentDays;
+            $totalAmount = (int) round($totalPrice);
+            $amountReceived = (int) round((float) $request->nominal_diterima);
+
+            if ($amountReceived < $totalAmount) {
+                throw ValidationException::withMessages([
+                    'nominal_diterima' => 'Nominal diterima tidak boleh kurang dari total pembayaran.',
+                ]);
+            }
             $photoPath = $request->file('identity_photo')->store('identity_photos', 'public');
 
             $paymentProofPath = null;
@@ -272,8 +284,10 @@ class OrderController extends Controller
                 'rent_days' => $rentDays,
                 'price_per_day' => $variant->price,
                 'total_price' => $totalPrice,
+                'amount_received' => $amountReceived,
+                'change_amount' => $amountReceived - $totalAmount,
+                'payment_method' => 'cash',
                 'order_status' => 'rented',
-                'payment_method' => 'manual',
                 'payment_status' => 'paid',
                 'paid_at' => now(),
                 'address' => $request->address,

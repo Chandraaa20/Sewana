@@ -23,6 +23,8 @@ class Order extends Model
         'rent_days',
         'price_per_day',
         'total_price',
+        'amount_received',
+        'change_amount',
         'order_status',
         'payment_method',
         'payment_status',
@@ -36,6 +38,8 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'amount_received' => 'integer',
+        'change_amount' => 'integer',
         'payment_payload' => 'array',
         'paid_at' => 'datetime',
     ];

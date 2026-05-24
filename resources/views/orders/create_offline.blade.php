@@ -4,9 +4,10 @@
     @php
         $today = now()->toDateString();
         $oldStartDate = old('start_date');
-        $minimumEndDate = $oldStartDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $oldStartDate) && $oldStartDate >= $today
-            ? $oldStartDate
-            : $today;
+        $minimumEndDate =
+            $oldStartDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $oldStartDate) && $oldStartDate >= $today
+                ? $oldStartDate
+                : $today;
     @endphp
 
     <div class="admin-page">
@@ -14,7 +15,8 @@
             <div>
                 <span class="admin-page-eyebrow">Operasional</span>
                 <h1 class="admin-page-title">Tambah Pesanan Offline</h1>
-                <p class="admin-page-subtitle">Catat transaksi langsung, pilih produk, dan cek estimasi harga sebelum disimpan.</p>
+                <p class="admin-page-subtitle">Catat transaksi langsung, pilih produk, dan cek estimasi harga sebelum
+                    disimpan.</p>
             </div>
             <a href="{{ route('pegawai.orders.index') }}" class="btn btn-outline-dark rounded-pill px-4">
                 <i class="bi bi-arrow-left me-1"></i> Kembali
@@ -42,99 +44,118 @@
             </div>
 
             <div class="admin-card-body">
-            <div class="row g-3">
-        {{-- Customer name --}}
-                <div class="col-md-6">
-                    <label class="form-label admin-form-label">Nama Pelanggan</label>
-                    <input type="text" name="customer_name" class="form-control" value="{{ old('customer_name') }}"
-                        required>
-                </div>
+                <div class="row g-3">
+                    {{-- Customer name --}}
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label">Nama Pelanggan</label>
+                        <input type="text" name="customer_name" class="form-control" value="{{ old('customer_name') }}"
+                            required>
+                    </div>
 
-                {{-- Identity photo --}}
-                <div class="col-md-6">
-                    <label class="form-label admin-form-label">Foto Identitas (KTP/SIM)</label>
-                    <input type="file" name="identity_photo" class="form-control"
-                        accept="image/*" capture="environment" required>
-                    <small class="text-muted">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label admin-form-label">Bukti Pembayaran</label>
-                    <input type="file" name="bukti" class="form-control"
-                        accept="image/*" capture="environment">
-                    <small class="text-muted">Opsional. Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
-                </div>
-                {{-- Product --}}
-                <div class="col-md-6">
-                    <label class="form-label admin-form-label">Pilih Produk</label>
-                    <select name="product_id" id="product_id" class="form-select" required>
-                        <option value="">-- Pilih Produk --</option>
-                        @foreach ($products as $p)
-                            <option value="{{ $p->id }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>
-                                {{ $p->name }} ({{ $p->sku ?? '-' }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                    {{-- Identity photo --}}
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label">Foto Identitas (KTP/SIM)</label>
+                        <input type="file" name="identity_photo" class="form-control" accept="image/*"
+                            capture="environment" required>
+                        <small class="text-muted">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label">Bukti Pembayaran</label>
+                        <input type="file" name="bukti" class="form-control" accept="image/*" capture="environment">
+                        <small class="text-muted">Opsional. Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
+                    </div>
+                    {{-- Product --}}
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label">Pilih Produk</label>
+                        <select name="product_id" id="product_id" class="form-select" required>
+                            <option value="">-- Pilih Produk --</option>
+                            @foreach ($products as $p)
+                                <option value="{{ $p->id }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>
+                                    {{ $p->name }} ({{ $p->sku ?? '-' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                {{-- Variant --}}
-                <div class="col-md-6">
-                    <label class="form-label admin-form-label">Pilih Varian</label>
-                    <select name="variant_id" id="variant_id" class="form-select" required disabled>
-                        <option value="">-- Pilih Produk dulu --</option>
-                    </select>
-                    <small id="variant_help" class="text-muted"></small>
-                </div>
+                    {{-- Variant --}}
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label">Pilih Varian</label>
+                        <select name="variant_id" id="variant_id" class="form-select" required disabled>
+                            <option value="">-- Pilih Produk dulu --</option>
+                        </select>
+                        <small id="variant_help" class="text-muted"></small>
+                    </div>
 
-                {{-- Dates --}}
-                <div class="col-md-3">
-                    <label class="form-label admin-form-label">Tanggal Mulai</label>
-                    <input type="date" name="start_date" class="form-control" value="{{ old('start_date') }}"
-                        min="{{ $today }}" required>
-                </div>
+                    {{-- Dates --}}
+                    <div class="col-md-3">
+                        <label class="form-label admin-form-label">Tanggal Mulai</label>
+                        <input type="date" name="start_date" class="form-control" value="{{ old('start_date') }}"
+                            min="{{ $today }}" required>
+                    </div>
 
-                <div class="col-md-3">
-                    <label class="form-label admin-form-label">Tanggal Selesai</label>
-                    <input type="date" name="end_date" class="form-control" value="{{ old('end_date') }}"
-                        min="{{ $minimumEndDate }}" required>
-                    <small id="date_help" class="text-danger"></small>
-                </div>
+                    <div class="col-md-3">
+                        <label class="form-label admin-form-label">Tanggal Selesai</label>
+                        <input type="date" name="end_date" class="form-control" value="{{ old('end_date') }}"
+                            min="{{ $minimumEndDate }}" required>
+                        <small id="date_help" class="text-danger"></small>
+                    </div>
 
-                {{-- Address --}}
-                <div class="col-md-6">
-                    <label class="form-label admin-form-label">Alamat</label>
-                    <input type="text" name="address" class="form-control" value="{{ old('address') }}" required>
-                </div>
+                    {{-- Address --}}
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label">Alamat</label>
+                        <input type="text" name="address" class="form-control" value="{{ old('address') }}" required>
+                    </div>
 
-                {{-- Pricing info --}}
-                <div class="col-12">
-                    <div class="alert alert-light border rounded-4 mb-0">
-                        <div class="d-flex justify-content-between flex-wrap gap-2">
-                            <div>
-                                <strong>Harga/Hari:</strong> <span id="price_per_day">-</span>
+                    {{-- Pricing info --}}
+                    <div class="col-12">
+                        <div class="alert alert-light border rounded-4 mb-0">
+                            <div class="d-flex justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <strong>Harga/Hari:</strong> <span id="price_per_day">-</span>
+                                </div>
+                                <div>
+                                    <strong>Stok:</strong> <span id="stock_info">-</span>
+                                </div>
+                                <div>
+                                    <strong>Total Perkiraan:</strong> <span id="total_estimate">-</span>
+                                </div>
                             </div>
-                            <div>
-                                <strong>Stok:</strong> <span id="stock_info">-</span>
-                            </div>
-                            <div>
-                                <strong>Total Perkiraan:</strong> <span id="total_estimate">-</span>
-                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Total dihitung otomatis (rent_days x price_per_day). Final total akan tersimpan sesuai
+                                controller.
+                            </small>
                         </div>
-                        <small class="text-muted d-block mt-2">
-                            Total dihitung otomatis (rent_days x price_per_day). Final total akan tersimpan sesuai
-                            controller.
+                    </div>
+                    {{-- Cash payment --}}
+                    <div class="col-md-6">
+                        <label for="nominal_diterima" class="form-label admin-form-label">
+                            Nominal Diterima <span class="text-danger">*</span>
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" name="nominal_diterima" id="nominal_diterima" class="form-control"
+                                min="0" step="1000" value="{{ old('nominal_diterima') }}"
+                                placeholder="Contoh: 150000" required>
+                        </div>
+
+                        @error('nominal_diterima')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+
+                        <small class="text-muted">
+                            Masukkan jumlah uang yang diterima dari pelanggan.
                         </small>
                     </div>
-                </div>
-
-                {{-- Submit --}}
-                <div class="col-12">
-                    <div class="admin-form-actions">
-                    <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4">
-                        <i class="bi bi-save me-1"></i> Simpan Pesanan Offline
-                    </button>
+                    {{-- Submit --}}
+                    <div class="col-12">
+                        <div class="admin-form-actions">
+                            <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4">
+                                <i class="bi bi-save me-1"></i> Simpan Pesanan Offline
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>
         </form>
     </div>
@@ -271,7 +292,8 @@
             variants.forEach(v => {
                 const opt = document.createElement('option');
                 opt.value = v.id;
-                opt.textContent = v.label + ' | ' + formatRupiah(v.price) + ' | ' + (v.stock > 0 ? 'Stok: ' + v.stock : 'Stok habis') + ' | ' + v.status;
+                opt.textContent = v.label + ' | ' + formatRupiah(v.price) + ' | ' + (v.stock > 0 ? 'Stok: ' + v
+                    .stock : 'Stok habis') + ' | ' + v.status;
                 opt.disabled = v.stock <= 0;
 
                 opt.dataset.price = v.price;
@@ -283,7 +305,8 @@
 
             const availableVariants = variants.filter(v => v.stock > 0);
             if (availableVariants.length === 0) {
-                helpEl.textContent = 'Semua varian produk ini sedang stok habis. Pilih produk lain sebelum menyimpan pesanan.';
+                helpEl.textContent =
+                    'Semua varian produk ini sedang stok habis. Pilih produk lain sebelum menyimpan pesanan.';
                 setSubmitDisabled(true);
                 return;
             }
