@@ -126,267 +126,268 @@
                             </small>
                         </div>
                     </div>
-                    <div>
 
-                        {{-- Payment method --}}
-                        <div class="col-md-6">
-                            <label for="payment_method" class="form-label admin-form-label">
-                                Metode Pembayaran <span class="text-danger">*</span>
-                            </label>
 
-                            <select name="payment_method" id="payment_method" class="form-select" required>
-                                <option value="cash" {{ old('payment_method', 'cash') === 'cash' ? 'selected' : '' }}>
-                                    Tunai
-                                </option>
-                                <option value="qris_dummy" {{ old('payment_method') === 'qris_dummy' ? 'selected' : '' }}>
-                                    QRIS Dummy
-                                </option>
-                            </select>
+                    {{-- Payment method --}}
+                    <div class="col-md-6">
+                        <label for="payment_method" class="form-label admin-form-label">
+                            Metode Pembayaran <span class="text-danger">*</span>
+                        </label>
 
-                            @error('payment_method')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                        <select name="payment_method" id="payment_method" class="form-select" required>
+                            <option value="cash" {{ old('payment_method', 'cash') === 'cash' ? 'selected' : '' }}>
+                                Tunai
+                            </option>
+                            <option value="qris_dummy" {{ old('payment_method') === 'qris_dummy' ? 'selected' : '' }}>
+                                QRIS Dummy
+                            </option>
+                        </select>
 
-                            <small class="text-muted">
-                                Pilih Tunai untuk pembayaran langsung, atau QRIS Dummy untuk simulasi pembayaran QR.
-                            </small>
+                        @error('payment_method')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
+
+                        <small class="text-muted">
+                            Pilih Tunai untuk pembayaran langsung, atau QRIS Dummy untuk simulasi pembayaran QR.
+                        </small>
+                    </div>
+
+                    {{-- Cash payment --}}
+                    <div class="col-md-6" id="cash_payment_wrapper">
+                        <label for="nominal_diterima" class="form-label admin-form-label">
+                            Nominal Diterima <span class="text-danger">*</span>
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" name="nominal_diterima" id="nominal_diterima" class="form-control"
+                                min="0" step="1000" value="{{ old('nominal_diterima') }}"
+                                placeholder="Contoh: 150000">
                         </div>
 
-                        {{-- Cash payment --}}
-                        <div class="col-md-6" id="cash_payment_wrapper">
-                            <label for="nominal_diterima" class="form-label admin-form-label">
-                                Nominal Diterima <span class="text-danger">*</span>
-                            </label>
+                        @error('nominal_diterima')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
 
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="number" name="nominal_diterima" id="nominal_diterima" class="form-control"
-                                    min="0" step="1000" value="{{ old('nominal_diterima') }}"
-                                    placeholder="Contoh: 150000">
-                            </div>
+                        <small class="text-muted">
+                            Wajib diisi untuk pembayaran tunai. Nominal harus sama atau lebih besar dari total
+                            pembayaran.
+                        </small>
+                    </div>
 
-                            @error('nominal_diterima')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
-
-                            <small class="text-muted">
-                                Wajib diisi untuk pembayaran tunai. Nominal harus sama atau lebih besar dari total
-                                pembayaran.
-                            </small>
-                        </div>
-
-                        {{-- Submit --}}
-                        <div class="col-12">
-                            <div class="admin-form-actions">
-                                <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4">
-                                    <i class="bi bi-save me-1"></i> Simpan Pesanan Offline
-                                </button>
-                            </div>
+                    {{-- Submit --}}
+                    <div class="col-12">
+                        <div class="admin-form-actions">
+                            <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4">
+                                <i class="bi bi-save me-1"></i> Simpan Pesanan Offline
+                            </button>
                         </div>
                     </div>
                 </div>
+            </div>
         </form>
-    </div>
 
-    @php
-        // Build a product-to-variants map for JavaScript. Safe to pass with @json.
-        $productVariantsMap = $products->mapWithKeys(function ($p) {
-            return [
-                (string) $p->id => $p->variants
-                    ->map(function ($v) {
-                        return [
-                            'id' => $v->id,
-                            'label' => trim(($v->size ? $v->size : '-') . ' / ' . ($v->color ? $v->color : '-')),
-                            'price' => (float) $v->price,
-                            'stock' => (int) $v->stock,
-                            'status' => $v->status,
-                        ];
-                    })
-                    ->values(),
-            ];
-        });
-    @endphp
 
-    <script>
-        const variantsByProduct = @json($productVariantsMap);
+        @php
+            // Build a product-to-variants map for JavaScript. Safe to pass with @json.
+            $productVariantsMap = $products->mapWithKeys(function ($p) {
+                return [
+                    (string) $p->id => $p->variants
+                        ->map(function ($v) {
+                            return [
+                                'id' => $v->id,
+                                'label' => trim(($v->size ? $v->size : '-') . ' / ' . ($v->color ? $v->color : '-')),
+                                'price' => (float) $v->price,
+                                'stock' => (int) $v->stock,
+                                'status' => $v->status,
+                            ];
+                        })
+                        ->values(),
+                ];
+            });
+        @endphp
 
-        const productSelect = document.getElementById('product_id');
-        const variantSelect = document.getElementById('variant_id');
+        <script>
+            const variantsByProduct = @json($productVariantsMap);
 
-        const priceEl = document.getElementById('price_per_day');
-        const stockEl = document.getElementById('stock_info');
-        const totalEl = document.getElementById('total_estimate');
-        const helpEl = document.getElementById('variant_help');
-        const dateHelpEl = document.getElementById('date_help');
-        const submitButton = document.getElementById('offline_submit');
+            const productSelect = document.getElementById('product_id');
+            const variantSelect = document.getElementById('variant_id');
 
-        const startInput = document.querySelector('input[name="start_date"]');
-        const endInput = document.querySelector('input[name="end_date"]');
-        const paymentMethodSelect = document.getElementById('payment_method');
-        const cashPaymentWrapper = document.getElementById('cash_payment_wrapper');
-        const nominalDiterimaInput = document.getElementById('nominal_diterima');
+            const priceEl = document.getElementById('price_per_day');
+            const stockEl = document.getElementById('stock_info');
+            const totalEl = document.getElementById('total_estimate');
+            const helpEl = document.getElementById('variant_help');
+            const dateHelpEl = document.getElementById('date_help');
+            const submitButton = document.getElementById('offline_submit');
 
-        function formatRupiah(n) {
-            if (typeof n !== 'number' || isNaN(n)) return '-';
-            return 'Rp' + n.toLocaleString('id-ID');
-        }
+            const startInput = document.querySelector('input[name="start_date"]');
+            const endInput = document.querySelector('input[name="end_date"]');
+            const paymentMethodSelect = document.getElementById('payment_method');
+            const cashPaymentWrapper = document.getElementById('cash_payment_wrapper');
+            const nominalDiterimaInput = document.getElementById('nominal_diterima');
 
-        function calcDays() {
-            const s = startInput.value;
-            const e = endInput.value;
-            if (!s || !e) return null;
-
-            const start = new Date(s);
-            const end = new Date(e);
-            const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-
-            if (isNaN(diff) || diff <= 0) return null;
-            return diff;
-        }
-
-        function updateEstimate() {
-            const selectedOption = variantSelect.options[variantSelect.selectedIndex];
-            if (!selectedOption || !selectedOption.dataset.price) {
-                priceEl.textContent = '-';
-                stockEl.textContent = '-';
-                totalEl.textContent = '-';
-                return;
+            function formatRupiah(n) {
+                if (typeof n !== 'number' || isNaN(n)) return '-';
+                return 'Rp' + n.toLocaleString('id-ID');
             }
 
-            const price = Number(selectedOption.dataset.price);
-            const stock = Number(selectedOption.dataset.stock);
+            function calcDays() {
+                const s = startInput.value;
+                const e = endInput.value;
+                if (!s || !e) return null;
 
-            priceEl.textContent = formatRupiah(price);
-            stockEl.textContent = String(stock);
+                const start = new Date(s);
+                const end = new Date(e);
+                const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-            const days = calcDays();
-            if (!days) {
-                totalEl.textContent = '-';
-                return;
+                if (isNaN(diff) || diff <= 0) return null;
+                return diff;
             }
 
-            totalEl.textContent = formatRupiah(price * days) + ' (' + days + ' hari)';
-        }
+            function updateEstimate() {
+                const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+                if (!selectedOption || !selectedOption.dataset.price) {
+                    priceEl.textContent = '-';
+                    stockEl.textContent = '-';
+                    totalEl.textContent = '-';
+                    return;
+                }
 
-        function setSubmitDisabled(disabled) {
-            if (submitButton) {
-                submitButton.disabled = disabled;
-            }
-        }
+                const price = Number(selectedOption.dataset.price);
+                const stock = Number(selectedOption.dataset.stock);
 
-        function updatePaymentMethodUI() {
-            if (!paymentMethodSelect || !cashPaymentWrapper || !nominalDiterimaInput) return;
+                priceEl.textContent = formatRupiah(price);
+                stockEl.textContent = String(stock);
 
-            const isCash = paymentMethodSelect.value === 'cash';
+                const days = calcDays();
+                if (!days) {
+                    totalEl.textContent = '-';
+                    return;
+                }
 
-            cashPaymentWrapper.style.display = isCash ? '' : 'none';
-            nominalDiterimaInput.required = isCash;
-
-            if (!isCash) {
-                nominalDiterimaInput.value = '';
-            }
-        }
-
-        if (paymentMethodSelect) {
-            paymentMethodSelect.addEventListener('change', updatePaymentMethodUI);
-            updatePaymentMethodUI();
-        }
-
-        function updateDateMinimum() {
-            if (!startInput || !endInput) return;
-
-            endInput.min = startInput.value || startInput.min;
-
-            if (dateHelpEl) {
-                dateHelpEl.textContent = '';
+                totalEl.textContent = formatRupiah(price * days) + ' (' + days + ' hari)';
             }
 
-            if (endInput.value && startInput.value && endInput.value < startInput.value) {
-                endInput.value = startInput.value;
-
-                if (dateHelpEl) {
-                    dateHelpEl.textContent = 'Tanggal selesai disesuaikan agar tidak sebelum tanggal mulai.';
+            function setSubmitDisabled(disabled) {
+                if (submitButton) {
+                    submitButton.disabled = disabled;
                 }
             }
 
-            updateEstimate();
-        }
+            function updatePaymentMethodUI() {
+                if (!paymentMethodSelect || !cashPaymentWrapper || !nominalDiterimaInput) return;
 
-        function loadVariants(productId) {
-            variantSelect.innerHTML = '';
-            helpEl.textContent = '';
-            priceEl.textContent = '-';
-            stockEl.textContent = '-';
-            totalEl.textContent = '-';
-            setSubmitDisabled(false);
+                const isCash = paymentMethodSelect.value === 'cash';
 
-            if (!productId || !variantsByProduct[productId]) {
-                variantSelect.disabled = true;
-                variantSelect.innerHTML = '<option value="">-- Pilih Produk dulu --</option>';
-                return;
+                cashPaymentWrapper.style.display = isCash ? '' : 'none';
+                nominalDiterimaInput.required = isCash;
+
+                if (!isCash) {
+                    nominalDiterimaInput.value = '';
+                }
             }
 
-            const variants = variantsByProduct[productId];
-            variantSelect.disabled = false;
-
-            if (variants.length === 0) {
-                variantSelect.innerHTML = '<option value="">-- Tidak ada varian --</option>';
-                helpEl.textContent = 'Produk ini belum memiliki varian.';
-                setSubmitDisabled(true);
-                return;
+            if (paymentMethodSelect) {
+                paymentMethodSelect.addEventListener('change', updatePaymentMethodUI);
+                updatePaymentMethodUI();
             }
 
-            variantSelect.innerHTML = '<option value="">-- Pilih Varian --</option>';
+            function updateDateMinimum() {
+                if (!startInput || !endInput) return;
 
-            variants.forEach(v => {
-                const opt = document.createElement('option');
-                opt.value = v.id;
-                opt.textContent = v.label + ' | ' + formatRupiah(v.price) + ' | ' + (v.stock > 0 ? 'Stok: ' + v
-                    .stock : 'Stok habis') + ' | ' + v.status;
-                opt.disabled = v.stock <= 0;
+                endInput.min = startInput.value || startInput.min;
 
-                opt.dataset.price = v.price;
-                opt.dataset.stock = v.stock;
-                opt.dataset.status = v.status;
+                if (dateHelpEl) {
+                    dateHelpEl.textContent = '';
+                }
 
-                variantSelect.appendChild(opt);
+                if (endInput.value && startInput.value && endInput.value < startInput.value) {
+                    endInput.value = startInput.value;
+
+                    if (dateHelpEl) {
+                        dateHelpEl.textContent = 'Tanggal selesai disesuaikan agar tidak sebelum tanggal mulai.';
+                    }
+                }
+
+                updateEstimate();
+            }
+
+            function loadVariants(productId) {
+                variantSelect.innerHTML = '';
+                helpEl.textContent = '';
+                priceEl.textContent = '-';
+                stockEl.textContent = '-';
+                totalEl.textContent = '-';
+                setSubmitDisabled(false);
+
+                if (!productId || !variantsByProduct[productId]) {
+                    variantSelect.disabled = true;
+                    variantSelect.innerHTML = '<option value="">-- Pilih Produk dulu --</option>';
+                    return;
+                }
+
+                const variants = variantsByProduct[productId];
+                variantSelect.disabled = false;
+
+                if (variants.length === 0) {
+                    variantSelect.innerHTML = '<option value="">-- Tidak ada varian --</option>';
+                    helpEl.textContent = 'Produk ini belum memiliki varian.';
+                    setSubmitDisabled(true);
+                    return;
+                }
+
+                variantSelect.innerHTML = '<option value="">-- Pilih Varian --</option>';
+
+                variants.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    opt.textContent = v.label + ' | ' + formatRupiah(v.price) + ' | ' + (v.stock > 0 ? 'Stok: ' + v
+                        .stock : 'Stok habis') + ' | ' + v.status;
+                    opt.disabled = v.stock <= 0;
+
+                    opt.dataset.price = v.price;
+                    opt.dataset.stock = v.stock;
+                    opt.dataset.status = v.status;
+
+                    variantSelect.appendChild(opt);
+                });
+
+                const availableVariants = variants.filter(v => v.stock > 0);
+                if (availableVariants.length === 0) {
+                    helpEl.textContent =
+                        'Semua varian produk ini sedang stok habis. Pilih produk lain sebelum menyimpan pesanan.';
+                    setSubmitDisabled(true);
+                    return;
+                }
+
+                helpEl.textContent = 'Varian dengan stok habis tidak dapat dipilih.';
+            }
+
+            productSelect.addEventListener('change', function() {
+                loadVariants(this.value);
             });
 
-            const availableVariants = variants.filter(v => v.stock > 0);
-            if (availableVariants.length === 0) {
-                helpEl.textContent =
-                    'Semua varian produk ini sedang stok habis. Pilih produk lain sebelum menyimpan pesanan.';
-                setSubmitDisabled(true);
-                return;
+            variantSelect.addEventListener('change', updateEstimate);
+            startInput.addEventListener('change', updateDateMinimum);
+            endInput.addEventListener('change', updateDateMinimum);
+
+            // Restore old value
+            const oldProductId = "{{ old('product_id') }}";
+            const oldVariantId = "{{ old('variant_id') }}";
+
+            if (oldProductId) {
+                productSelect.value = oldProductId;
+                loadVariants(oldProductId);
+
+                if (oldVariantId) {
+                    setTimeout(() => {
+                        variantSelect.value = oldVariantId;
+                        updateEstimate();
+                    }, 0);
+                }
             }
 
-            helpEl.textContent = 'Varian dengan stok habis tidak dapat dipilih.';
-        }
-
-        productSelect.addEventListener('change', function() {
-            loadVariants(this.value);
-        });
-
-        variantSelect.addEventListener('change', updateEstimate);
-        startInput.addEventListener('change', updateDateMinimum);
-        endInput.addEventListener('change', updateDateMinimum);
-
-        // Restore old value
-        const oldProductId = "{{ old('product_id') }}";
-        const oldVariantId = "{{ old('variant_id') }}";
-
-        if (oldProductId) {
-            productSelect.value = oldProductId;
-            loadVariants(oldProductId);
-
-            if (oldVariantId) {
-                setTimeout(() => {
-                    variantSelect.value = oldVariantId;
-                    updateEstimate();
-                }, 0);
-            }
-        }
-
-        updateDateMinimum();
-    </script>
+            updateDateMinimum();
+        </script>
+    </div>
 @endsection
