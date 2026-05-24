@@ -73,8 +73,7 @@
                                     </button>
                                 </form>
                             @endif
-                            <a href="{{ route('penyewa.orders.show', $order->id) }}"
-                                class="btn btn-dark rounded-pill px-4">
+                            <a href="{{ route('penyewa.orders.show', $order->id) }}" class="btn btn-dark rounded-pill px-4">
                                 Kembali ke Detail Order
                             </a>
                         </div>

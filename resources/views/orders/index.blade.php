@@ -28,13 +28,13 @@
                                     class="col-md-3 text-center d-flex align-items-center justify-content-center p-3 customer-order-media">
                                     @if ($order->product && $productImage)
                                         <img src="{{ $productImage->publicUrl() }}"
-                                            alt="Foto produk {{ $order->product->name }}"
-                                            class="img-fluid admin-list-image"
-                                            width="160" height="160"
+                                            alt="Foto produk {{ $order->product->name }}" class="admin-list-image"
+                                            width="150" height="170"
                                             @if ($orderIndex === 0) fetchpriority="high" @else loading="lazy" @endif
                                             decoding="async">
                                     @else
-                                        <div class="customer-order-image-fallback d-flex flex-column align-items-center justify-content-center admin-list-image">
+                                        <div
+                                            class="customer-order-image-fallback d-flex flex-column align-items-center justify-content-center admin-list-image">
                                             <i class="bi bi-image text-muted fs-2"></i>
                                             <span class="small text-muted mt-2">Tidak Ada Gambar</span>
                                         </div>
@@ -56,7 +56,8 @@
                                     <div class="customer-order-meta">
                                         <div>
                                             <span>Varian</span>
-                                            <strong>{{ $order->variant->size ?? '-' }} / {{ $order->variant->color ?? '-' }}</strong>
+                                            <strong>{{ $order->variant->size ?? '-' }} /
+                                                {{ $order->variant->color ?? '-' }}</strong>
                                         </div>
                                         <div>
                                             <span>Periode</span>
@@ -122,7 +123,7 @@
                                         </div>
 
                                         <div class="customer-order-actions">
-                                            <a href="{{ route('penyewa.orders.show', $order->id) }}"
+                                            <a href="{{ route('penyewa.orders.show', $order->id) }}?back=my"
                                                 class="btn btn-dark rounded-pill customer-order-detail"
                                                 aria-label="Lihat detail pesanan {{ $order->id }}">
                                                 <i class="bi bi-eye me-1"></i> Detail
@@ -134,7 +135,8 @@
                                                 data-confirm-label="Hapus Pesanan">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-light text-danger rounded-pill customer-order-delete"
+                                                <button type="submit"
+                                                    class="btn btn-light text-danger rounded-pill customer-order-delete"
                                                     aria-label="Hapus pesanan {{ $order->id }}">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -160,7 +162,8 @@
                 </div>
                 <span class="admin-page-eyebrow">Belum Ada Aktivitas</span>
                 <h2>Belum ada pesanan</h2>
-                <p>Pilih produk dari katalog Sewana, tentukan varian dan tanggal sewa, lalu semua status pesanan akan tampil di sini.</p>
+                <p>Pilih produk dari katalog Sewana, tentukan varian dan tanggal sewa, lalu semua status pesanan akan tampil
+                    di sini.</p>
                 <a href="{{ route('penyewa.products.index') }}" class="btn btn-dark rounded-pill px-4">
                     <i class="bi bi-shop me-2"></i> Jelajahi Produk
                 </a>
@@ -170,4 +173,3 @@
 
     {{-- CSS Tambahan --}}
 @endsection
-

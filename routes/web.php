@@ -73,6 +73,10 @@ Route::middleware('auth')->group(function () {
                 Route::get('/allorders', 'aOrders')->middleware('permission:orders.read')->name('all');
                 Route::get('/offline/create', 'createOffline')->middleware('permission:orders.manage')->name('offline.create');
                 Route::post('/offline/store', 'storeOffline')->middleware('permission:orders.manage')->name('offline.store');
+                Route::get('/{order}/offline-qris', 'offlineQrisShow')->middleware('permission:orders.manage')->name('offline-qris.show');
+                Route::post('/{order}/offline-qris/simulate-success', 'simulateOfflineQrisSuccess')->middleware('permission:orders.manage')
+                    ->name('offline-qris.simulate-success');
+
 
                 // Routes with IDs
                 Route::middleware('permission:orders.manage')->group(function () {

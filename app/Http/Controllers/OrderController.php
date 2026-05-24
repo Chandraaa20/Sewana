@@ -307,7 +307,6 @@ class OrderController extends Controller
                 'paid_at' => $paymentMethod === 'cash' ? now() : null,
                 'address' => $request->address,
             ]);
-
             if ($paymentMethod === 'cash') {
                 $variant->decrement('stock', 1);
             }
@@ -320,16 +319,65 @@ class OrderController extends Controller
 
             return $order;
         });
-
+        if ($order->payment_method === 'qris_dummy') {
+            return redirect()->route('pegawai.orders.offline-qris.show', $order)
+                ->with('success', 'Pesanan offline QRIS Dummy berhasil dibuat dan menunggu pembayaran.');
+        }
         return redirect()->route('pegawai.orders.index')
-            ->with(
-                'success',
-                $order->payment_method === 'qris_dummy'
-                    ? 'Pesanan offline QRIS Dummy berhasil dibuat dan menunggu pembayaran.'
-                    : 'Pesanan offline tunai berhasil ditambahkan.'
-            );
+            ->with('success', 'Pesanan offline tunai berhasil ditambahkan.');
+    }
+    public function offlineQrisShow(Order $order)
+    {
+        if (! Auth::user()->hasAnyRole(['pegawai', 'pemilik'])) {
+            abort(403);
+        }
+
+        if ($order->source !== 'offline' || $order->payment_method !== 'qris_dummy') {
+            abort(404);
+        }
+
+        $paymentUrl = route('pegawai.orders.offline-qris.show', $order);
+        $paymentQrCodeSvg = $this->generateQrCodeSvg($paymentUrl);
+
+        $order->load(['user', 'product', 'variant']);
+
+        return view('orders.offline_qris_dummy', compact('order', 'paymentUrl', 'paymentQrCodeSvg'));
     }
 
+    public function simulateOfflineQrisSuccess(Order $order)
+    {
+        if (! Auth::user()->hasAnyRole(['pegawai', 'pemilik'])) {
+            abort(403);
+        }
+
+        if (! app()->environment(['local', 'development', 'testing'])) {
+            abort(404);
+        }
+
+        if ($order->source !== 'offline' || $order->payment_method !== 'qris_dummy') {
+            abort(404);
+        }
+
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('pegawai.orders.offline-qris.show', $order)
+                ->with('warning', 'Pembayaran pesanan ini sudah diterima.');
+        }
+
+        $order->update([
+            'payment_status' => 'paid',
+            'paid_at' => now(),
+            'payment_payload' => [
+                'provider' => 'dummy',
+                'type' => 'offline_qris',
+                'status' => 'success',
+                'simulated_at' => now()->toDateTimeString(),
+                'handled_by' => Auth::id(),
+            ],
+        ]);
+
+        return redirect()->route('pegawai.orders.offline-qris.show', $order)
+            ->with('success', 'Simulasi pembayaran QRIS berhasil. Pesanan sudah berstatus dibayar.');
+    }
     /** Approve an order and decrement stock. */
     public function approve(Request $request, $id)
     {

@@ -16,7 +16,22 @@
                     <i class="bi bi-clock me-1"></i> Dibuat pada: {{ $order->created_at?->format('d M Y, H:i') }}
                 </p>
             </div>
-            <a href="{{ url()->previous() }}" class="btn btn-outline-dark rounded-pill px-4 shadow-sm fw-medium">
+            @php
+                $backTarget = request('back');
+
+                $backUrl = match ($backTarget) {
+                    'all' => route('pegawai.orders.all'),
+                    'active' => route('pegawai.orders.index'),
+                    'my' => route('penyewa.orders.index'),
+                    default => auth()
+                        ->user()
+                        ->hasAnyRole(['pegawai', 'pemilik'])
+                        ? route('pegawai.orders.index')
+                        : route('penyewa.orders.index'),
+                };
+            @endphp
+
+            <a href="{{ $backUrl }}" class="btn btn-outline-dark rounded-pill px-4 shadow-sm fw-medium">
                 <i class="bi bi-arrow-left me-2"></i> Kembali
             </a>
         </div>
@@ -50,7 +65,11 @@
             };
             $paymentIcon = $order->payment_status === 'paid' ? 'check-circle' : 'x-circle';
             $isOnlineOrder = $order->source === 'online';
-            $canApproveOrder = $status === 'pending' && (!$isOnlineOrder || $order->payment_status === 'paid');
+            $isOfflineQrisOrder = $order->source === 'offline' && $order->payment_method === 'qris_dummy';
+
+            $canApproveOrder =
+                $status === 'pending' &&
+                ((!$isOnlineOrder && !$isOfflineQrisOrder) || $order->payment_status === 'paid');
             $paymentApprovalInfo = match ($order->payment_status) {
                 'pending' => 'Menunggu pembayaran penyewa',
                 'failed' => 'Pembayaran penyewa gagal',
@@ -285,7 +304,7 @@
                                     alt="Bukti pembayaran pesanan #{{ $order->id }}" width="640" height="420"
                                     loading="lazy" decoding="async">
                             </div>
-                        @elseif ($isOnlineOrder && ($order->payment_reference || $order->paid_at))
+                        @elseif (($isOnlineOrder || $isOfflineQrisOrder) && ($order->payment_reference || $order->paid_at))
                             <div class="bg-light rounded-4 p-3 border border-dashed">
                                 <p class="text-muted small mb-3">
                                     Pembayaran online diverifikasi melalui payment gateway/dummy payment.
@@ -310,6 +329,25 @@
                         @endif
                     </div>
                 </div>
+                @if ($isOnlineOrder && $order->payment_status === 'pending')
+                    <div class="card shadow-sm rounded-4 border-start border-4 border-warning">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold text-dark mb-2">
+                                <i class="bi bi-wallet2 text-warning me-2"></i> Pembayaran Belum Selesai
+                            </h6>
+
+                            <p class="text-muted small mb-3">
+                                Pesanan ini masih menunggu pembayaran. Silakan lanjutkan pembayaran agar pesanan dapat
+                                diproses oleh petugas.
+                            </p>
+
+                            <a href="{{ route('penyewa.orders.payment.instructions', $order->id) }}"
+                                class="btn btn-warning rounded-pill px-4 fw-semibold">
+                                <i class="bi bi-credit-card me-1"></i> Lanjutkan Pembayaran
+                            </a>
+                        </div>
+                    </div>
+                @endif
                 {{-- QR Code Validasi Transaksi --}}
                 @if ($verificationUrl && $verificationQrCodeSvg)
                     <div class="card shadow-sm border-0 rounded-4">
@@ -345,6 +383,12 @@
                             </h6>
 
                             <div class="bg-light p-3 rounded-4 mb-3">
+                                @if ($order->source === 'offline' && $order->payment_method === 'qris_dummy')
+                                    <a href="{{ route('pegawai.orders.offline-qris.show', $order) }}"
+                                        class="btn btn-outline-dark w-100 rounded-pill fw-semibold mb-3">
+                                        <i class="bi bi-qr-code me-1"></i> Buka Pembayaran QRIS
+                                    </a>
+                                @endif
                                 {{-- Jika PENDING --}}
                                 @if ($status === 'pending')
                                     <p class="text-muted small mb-3">Tinjau pesanan dan identitas pelanggan. Pilih

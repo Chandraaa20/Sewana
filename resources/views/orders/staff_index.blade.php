@@ -59,7 +59,8 @@
                         };
                         $customerLabel = $order->customer_name ?: $order->user->name ?? 'Tidak Diketahui';
                         $isOnlineOrder = $order->source === 'online';
-                        $canApproveOrder = $status === 'pending' && (! $isOnlineOrder || $order->payment_status === 'paid');
+                        $canApproveOrder =
+                            $status === 'pending' && (!$isOnlineOrder || $order->payment_status === 'paid');
                         $paymentApprovalInfo = match ($order->payment_status) {
                             'pending' => 'Menunggu pembayaran penyewa',
                             'failed' => 'Pembayaran penyewa gagal',
@@ -77,17 +78,18 @@
                                     @if ($order->product && $productImage)
                                         <img src="{{ $productImage->publicUrl() }}"
                                             class="img-fluid rounded-3 shadow-sm admin-square-media"
-                                            alt="Foto produk {{ $order->product->name }}"
-                                            width="160" height="160"
+                                            alt="Foto produk {{ $order->product->name }}" width="160" height="160"
                                             @if ($orderIndex === 0) fetchpriority="high" @else loading="lazy" @endif
                                             decoding="async"
                                             onerror="this.onerror=null; this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none'); this.nextElementSibling.classList.add('d-flex');">
-                                        <div class="d-none bg-white rounded-3 flex-column align-items-center justify-content-center shadow-sm admin-square-media">
+                                        <div
+                                            class="d-none bg-white rounded-3 flex-column align-items-center justify-content-center shadow-sm admin-square-media">
                                             <i class="bi bi-image text-muted fs-1"></i>
                                             <span class="small text-muted mt-2">Gambar tidak tersedia</span>
                                         </div>
                                     @else
-                                        <div class="bg-white rounded-3 d-flex flex-column align-items-center justify-content-center shadow-sm admin-square-media">
+                                        <div
+                                            class="bg-white rounded-3 d-flex flex-column align-items-center justify-content-center shadow-sm admin-square-media">
                                             <i class="bi bi-image text-muted fs-1"></i>
                                             <span class="small text-muted mt-2">Tidak Ada Gambar</span>
                                         </div>
@@ -164,7 +166,7 @@
 
                                 <div
                                     class="col-md-3 col-lg-3 d-flex flex-column justify-content-center bg-light bg-opacity-50 p-4 border-start">
-                                    <a href="{{ route('pegawai.orders.show', $order->id) }}"
+                                    <a href="{{ route('pegawai.orders.show', $order->id) }}?back=active"
                                         class="btn btn-outline-dark rounded-3 mb-2 w-100 fw-semibold">
                                         <i class="bi bi-eye"></i> Detail
                                     </a>
@@ -216,9 +218,11 @@
                                                                         dan waktu pembayaran.
                                                                     </p>
                                                                     <div class="bg-light rounded-3 p-3 small">
-                                                                        <div class="d-flex justify-content-between gap-3 mb-2">
+                                                                        <div
+                                                                            class="d-flex justify-content-between gap-3 mb-2">
                                                                             <span class="text-muted">Reference</span>
-                                                                            <span class="fw-semibold text-end">{{ $order->payment_reference ?? '-' }}</span>
+                                                                            <span
+                                                                                class="fw-semibold text-end">{{ $order->payment_reference ?? '-' }}</span>
                                                                         </div>
                                                                         <div class="d-flex justify-content-between gap-3">
                                                                             <span class="text-muted">Dibayar pada</span>
@@ -228,21 +232,27 @@
                                                                         </div>
                                                                     </div>
                                                                 @else
-                                                                    <p class="text-muted small mb-3">Silakan unggah bukti bahwa
-                                                                        barang sudah disetujui untuk disewa atau diambil.</p>
-                                                                    <input type="file" name="bukti" class="form-control mb-2"
-                                                                        accept="image/*" capture="environment"
-                                                                        required onchange="preview{{ $order->id }}(event)"
+                                                                    <p class="text-muted small mb-3">Silakan unggah bukti
+                                                                        bahwa
+                                                                        barang sudah disetujui untuk disewa atau diambil.
+                                                                    </p>
+                                                                    <input type="file" name="bukti"
+                                                                        class="form-control mb-2" accept="image/*"
+                                                                        capture="environment" required
+                                                                        onchange="preview{{ $order->id }}(event)"
                                                                         aria-label="Unggah bukti transaksi pesanan {{ $order->id }}">
-                                                                    <div class="admin-form-help mb-3">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</div>
+                                                                    <div class="admin-form-help mb-3">Format JPG, JPEG,
+                                                                        PNG, atau WEBP. Maksimal 10 MB.</div>
                                                                     @error('bukti')
-                                                                        <div class="admin-field-error mb-3">{{ $message }}</div>
+                                                                        <div class="admin-field-error mb-3">
+                                                                            {{ $message }}</div>
                                                                     @enderror
 
-                                                                    <div class="text-center bg-light rounded-3 p-2 admin-upload-preview">
+                                                                    <div
+                                                                        class="text-center bg-light rounded-3 p-2 admin-upload-preview">
                                                                         <img id="img{{ $order->id }}" class="rounded"
-                                                                            alt="Pratinjau bukti transaksi" width="320" height="240"
-                                                                            decoding="async">
+                                                                            alt="Pratinjau bukti transaksi" width="320"
+                                                                            height="240" decoding="async">
                                                                         <span id="placeholder{{ $order->id }}"
                                                                             class="text-muted d-block mt-5"><i
                                                                                 class="bi bi-image fs-3"></i><br>Pratinjau

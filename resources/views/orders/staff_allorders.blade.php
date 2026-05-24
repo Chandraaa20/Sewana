@@ -3,8 +3,7 @@
 @section('content')
     <div class="admin-page admin-page--wide">
         {{-- Header & Filter Toolbar --}}
-        <div
-            class="admin-page-header flex-column flex-md-row align-items-md-center">
+        <div class="admin-page-header flex-column flex-md-row align-items-md-center">
             <div>
                 <span class="admin-page-eyebrow">Riwayat</span>
                 <h1 class="admin-page-title">Semua Sewa</h1>
@@ -17,8 +16,9 @@
                     <span class="input-group-text bg-white border-end-0 text-muted">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0 search-input"
-                        placeholder="Cari pelanggan / produk..." aria-label="Cari pelanggan atau produk">
+                    <input type="text" name="search" value="{{ request('search') }}"
+                        class="form-control border-start-0 search-input" placeholder="Cari pelanggan / produk..."
+                        aria-label="Cari pelanggan atau produk">
                 </div>
 
                 <select name="status" class="form-select form-select-sm shadow-sm admin-filter-select filter-select"
@@ -36,9 +36,8 @@
                         Filter
                     </button>
                     @if (request('search') || request('status'))
-                        <a href="{{ route('pegawai.orders.all') }}"
-                            class="btn btn-sm btn-outline-danger shadow-sm px-3" title="Atur Ulang Filter"
-                            aria-label="Atur ulang filter pesanan">
+                        <a href="{{ route('pegawai.orders.all') }}" class="btn btn-sm btn-outline-danger shadow-sm px-3"
+                            title="Atur Ulang Filter" aria-label="Atur ulang filter pesanan">
                             <i class="bi bi-x-circle"></i>
                         </a>
                     @endif
@@ -63,17 +62,20 @@
                                     class="col-md-3 col-lg-2 bg-light d-flex align-items-center justify-content-center p-3 border-end">
                                     @if ($order->product && $productImage)
                                         <img src="{{ $productImage->publicUrl() }}"
-                                            alt="Foto produk {{ $order->product->name }}" class="img-fluid rounded-3 shadow-sm admin-square-media"
-                                            width="160" height="160"
+                                            alt="Foto produk {{ $order->product->name }}"
+                                            class="img-fluid rounded-3 shadow-sm admin-square-media" width="160"
+                                            height="160"
                                             @if ($orderIndex === 0) fetchpriority="high" @else loading="lazy" @endif
                                             decoding="async"
                                             onerror="this.onerror=null; this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none'); this.nextElementSibling.classList.add('d-flex');">
-                                        <div class="d-none bg-white rounded-3 flex-column align-items-center justify-content-center shadow-sm admin-square-media">
+                                        <div
+                                            class="d-none bg-white rounded-3 flex-column align-items-center justify-content-center shadow-sm admin-square-media">
                                             <i class="bi bi-image text-muted fs-1"></i>
                                             <span class="small text-muted mt-2">Gambar tidak tersedia</span>
                                         </div>
                                     @else
-                                        <div class="bg-white rounded-3 d-flex flex-column align-items-center justify-content-center shadow-sm admin-square-media">
+                                        <div
+                                            class="bg-white rounded-3 d-flex flex-column align-items-center justify-content-center shadow-sm admin-square-media">
                                             <i class="bi bi-image text-muted fs-1"></i>
                                             <span class="small text-muted mt-2">Tidak Ada Gambar</span>
                                         </div>
@@ -92,7 +94,8 @@
                                                 <i class="bi bi-person-badge text-muted fs-5 me-2"></i>
                                                 <div>
                                                     <p class="text-muted small mb-0">Pelanggan</p>
-                                                    <p class="fw-semibold text-dark mb-0 text-truncate admin-text-truncate-sm">
+                                                    <p
+                                                        class="fw-semibold text-dark mb-0 text-truncate admin-text-truncate-sm">
                                                         {{ $order->customer_name ?? ($order->user->name ?? 'Tidak Diketahui') }}
                                                     </p>
                                                 </div>
@@ -163,7 +166,7 @@
                                             {{ strtoupper($statusLabel) }}
                                         </span>
 
-                                        <a href="{{ route('pegawai.orders.show', $order->id) }}"
+                                        <a href="{{ route('pegawai.orders.show', $order->id) }}?back=all"
                                             class="btn btn-outline-dark rounded-3 w-100 fw-semibold">
                                             <i class="bi bi-eye me-1"></i> Lihat Detail
                                         </a>
@@ -195,4 +198,3 @@
 
     {{-- Tambahan CSS --}}
 @endsection
-
