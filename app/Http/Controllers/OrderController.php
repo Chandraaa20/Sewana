@@ -89,7 +89,9 @@ class OrderController extends Controller
                 ->with('error', 'Produk tidak ditemukan.');
         }
 
-        $product = Product::with(['variants', 'images'])->findOrFail($request->product_id);
+        $product = Product::with(['variants', 'images'])
+            ->where('status', 'active')
+            ->findOrFail($request->product_id);
 
         return view('orders.create', compact('product'));
     }
@@ -100,12 +102,16 @@ class OrderController extends Controller
         $today = now()->toDateString();
 
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => [
+                'required',
+                Rule::exists('products', 'id')->where(fn($query) => $query->where('status', 'active')),
+            ],
             'variant_id' => [
                 'required',
                 Rule::exists('product_variants', 'id')->where(function ($query) use ($request) {
                     $query->where('product_id', $request->input('product_id'))
-                        ->where('stock', '>', 0);
+                        ->where('stock', '>', 0)
+                        ->where('status', 'tersedia');
                 }),
             ],
             'customer_name' => 'required|string|max:255',
@@ -115,9 +121,9 @@ class OrderController extends Controller
             'address' => 'required|string|max:255',
         ], [
             'product_id.required' => 'Produk wajib dipilih.',
-            'product_id.exists' => 'Produk yang dipilih tidak valid.',
+            'product_id.exists' => 'Produk yang dipilih tidak valid atau sedang tidak aktif.',
             'variant_id.required' => 'Varian wajib dipilih.',
-            'variant_id.exists' => 'Varian tidak valid, tidak sesuai produk, atau stoknya sudah habis.',
+            'variant_id.exists' => 'Varian tidak valid, tidak sesuai produk, stoknya habis, atau statusnya tidak tersedia.',
             'customer_name.required' => 'Nama penyewa wajib diisi.',
             'identity_photo.required' => 'Foto identitas wajib diunggah.',
             'identity_photo.image' => 'Foto identitas harus berupa gambar.',
@@ -133,7 +139,10 @@ class OrderController extends Controller
         ]);
 
         return DB::transaction(function () use ($request, $paymentGateway) {
-            $variant = ProductVariant::lockForUpdate()->findOrFail($request->variant_id);
+            $variant = ProductVariant::with('product')
+                ->whereKey($request->variant_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if ((int) $variant->product_id !== (int) $request->product_id) {
                 return back()->with('error', 'Varian tidak sesuai dengan produk yang dipilih.')->withInput();
@@ -141,6 +150,14 @@ class OrderController extends Controller
 
             if ($variant->stock <= 0) {
                 return back()->with('error', 'Mohon maaf, stok varian ini baru saja habis.')->withInput();
+            }
+
+            if ($variant->status !== 'tersedia') {
+                return back()->with('error', 'Varian tidak dapat disewa karena statusnya tidak tersedia.')->withInput();
+            }
+
+            if (! $variant->product || $variant->product->status !== 'active') {
+                return back()->with('error', 'Produk tidak dapat disewa karena sedang tidak aktif.')->withInput();
             }
 
             $start = Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay();
@@ -182,7 +199,9 @@ class OrderController extends Controller
     /** Show the offline order creation form for staff. */
     public function createOffline()
     {
-        $products = Product::with(['variants', 'images'])->get();
+        $products = Product::with(['variants', 'images'])
+            ->where('status', 'active')
+            ->get();
 
         return view('orders.create_offline', compact('products'));
     }
@@ -200,12 +219,16 @@ class OrderController extends Controller
             'customer_name' => 'required|string|max:255',
             'identity_photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
             'bukti' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => [
+                'required',
+                Rule::exists('products', 'id')->where(fn($query) => $query->where('status', 'active')),
+            ],
             'variant_id' => [
                 'required',
                 Rule::exists('product_variants', 'id')->where(function ($query) use ($request) {
                     $query->where('product_id', $request->input('product_id'))
-                        ->where('stock', '>', 0);
+                        ->where('stock', '>', 0)
+                        ->where('status', 'tersedia');
                 }),
             ],
             'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
@@ -223,9 +246,9 @@ class OrderController extends Controller
             'bukti.mimes' => 'Bukti pembayaran harus berformat JPG, JPEG, PNG, atau WEBP.',
             'bukti.max' => 'Ukuran bukti pembayaran maksimal 10 MB.',
             'product_id.required' => 'Produk wajib dipilih.',
-            'product_id.exists' => 'Produk yang dipilih tidak valid.',
+            'product_id.exists' => 'Produk yang dipilih tidak valid atau sedang tidak aktif.',
             'variant_id.required' => 'Varian wajib dipilih.',
-            'variant_id.exists' => 'Varian tidak valid, tidak sesuai produk, atau stoknya sudah habis.',
+            'variant_id.exists' => 'Varian tidak valid, tidak sesuai produk, stoknya habis, atau statusnya tidak tersedia.',
             'start_date.required' => 'Tanggal mulai sewa wajib diisi.',
             'start_date.date_format' => 'Format tanggal mulai sewa tidak valid.',
             'start_date.after_or_equal' => 'Tanggal mulai sewa tidak boleh sebelum hari ini.',
@@ -241,7 +264,10 @@ class OrderController extends Controller
         ]);
 
         $order = DB::transaction(function () use ($request) {
-            $variant = ProductVariant::lockForUpdate()->findOrFail($request->variant_id);
+            $variant = ProductVariant::with('product')
+                ->whereKey($request->variant_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if ((int) $variant->product_id !== (int) $request->product_id) {
                 throw ValidationException::withMessages([
@@ -252,6 +278,18 @@ class OrderController extends Controller
             if ($variant->stock <= 0) {
                 throw ValidationException::withMessages([
                     'variant_id' => 'Mohon maaf, stok varian ini baru saja habis.',
+                ]);
+            }
+
+            if ($variant->status !== 'tersedia') {
+                throw ValidationException::withMessages([
+                    'variant_id' => 'Varian tidak dapat disewa karena statusnya tidak tersedia.',
+                ]);
+            }
+
+            if (! $variant->product || $variant->product->status !== 'active') {
+                throw ValidationException::withMessages([
+                    'product_id' => 'Produk tidak dapat disewa karena sedang tidak aktif.',
                 ]);
             }
 
@@ -396,7 +434,10 @@ class OrderController extends Controller
                 return back()->with('error', 'Pesanan sudah diproses.');
             }
 
-            if ($order->source === 'online' && $order->payment_status !== 'paid') {
+            $requiresPaidBeforeApproval = $order->source === 'online'
+                || ($order->source === 'offline' && $order->payment_method === 'qris_dummy');
+
+            if ($requiresPaidBeforeApproval && $order->payment_status !== 'paid') {
                 $message = match ($order->payment_status) {
                     'pending' => 'Menunggu pembayaran penyewa sebelum pesanan dapat disetujui.',
                     'failed' => 'Pembayaran penyewa gagal. Pesanan tidak dapat disetujui.',
@@ -411,11 +452,22 @@ class OrderController extends Controller
                 return back()->with('error', 'Pesanan varian tidak valid.');
             }
 
-            $variant = ProductVariant::lockForUpdate()->findOrFail($order->variant_id);
+            $variant = ProductVariant::with('product')
+                ->whereKey($order->variant_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             // Ensure stock is still available when staff approves the order.
             if ($variant->stock <= 0) {
                 return back()->with('error', 'Gagal menyetujui: stok barang saat ini sudah habis.');
+            }
+
+            if ($variant->status !== 'tersedia') {
+                return back()->with('error', 'Gagal menyetujui: varian tidak tersedia untuk disewa.');
+            }
+
+            if (! $variant->product || $variant->product->status !== 'active') {
+                return back()->with('error', 'Gagal menyetujui: produk sedang tidak aktif.');
             }
 
             if ($request->hasFile('bukti') && $order->source !== 'online') {
@@ -442,11 +494,11 @@ class OrderController extends Controller
             'payment_status' => 'nullable|in:paid,pending',
         ]);
 
-        DB::transaction(function () use ($request, $id) {
+        $response = DB::transaction(function () use ($request, $id) {
             $order = Order::lockForUpdate()->findOrFail($id);
 
             if ($order->order_status !== 'approved') {
-                abort(400, 'Pesanan harus berstatus disetujui sebelum diserahkan.');
+                return back()->with('error', 'Pesanan harus berstatus disetujui sebelum diserahkan. Stok tidak diubah.');
             }
 
             $payment = $request->input('payment_status', 'pending');
@@ -458,6 +510,10 @@ class OrderController extends Controller
             ]);
         });
 
+        if ($response) {
+            return $response;
+        }
+
         return back()->with('success', 'Barang diserahkan. Status pesanan menjadi sedang disewa.');
     }
 
@@ -468,7 +524,7 @@ class OrderController extends Controller
             $order = Order::lockForUpdate()->findOrFail($id);
 
             if ($order->order_status !== 'rented') {
-                abort(400, 'Hanya pesanan yang sedang disewa yang bisa dikembalikan.');
+                return back()->with('error', 'Hanya pesanan yang sedang disewa yang bisa dikembalikan. Stok tidak diubah.');
             }
 
             if ($order->variant_id) {

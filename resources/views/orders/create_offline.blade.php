@@ -340,10 +340,12 @@
 
                 variants.forEach(v => {
                     const opt = document.createElement('option');
+                    const isRentable = v.stock > 0 && v.status === 'tersedia';
+
                     opt.value = v.id;
-                    opt.textContent = v.label + ' | ' + formatRupiah(v.price) + ' | ' + (v.stock > 0 ? 'Stok: ' + v
-                        .stock : 'Stok habis') + ' | ' + v.status;
-                    opt.disabled = v.stock <= 0;
+                    opt.textContent = v.label + ' | ' + formatRupiah(v.price) + ' | ' + (isRentable ? 'Stok: ' + v
+                        .stock : 'Tidak tersedia') + ' | ' + v.status;
+                    opt.disabled = !isRentable;
 
                     opt.dataset.price = v.price;
                     opt.dataset.stock = v.stock;
@@ -352,15 +354,15 @@
                     variantSelect.appendChild(opt);
                 });
 
-                const availableVariants = variants.filter(v => v.stock > 0);
+                const availableVariants = variants.filter(v => v.stock > 0 && v.status === 'tersedia');
                 if (availableVariants.length === 0) {
                     helpEl.textContent =
-                        'Semua varian produk ini sedang stok habis. Pilih produk lain sebelum menyimpan pesanan.';
+                        'Semua varian produk ini sedang tidak tersedia. Pilih produk lain sebelum menyimpan pesanan.';
                     setSubmitDisabled(true);
                     return;
                 }
 
-                helpEl.textContent = 'Varian dengan stok habis tidak dapat dipilih.';
+                helpEl.textContent = 'Varian dengan stok habis, disewa, rusak, atau hilang tidak dapat dipilih.';
             }
 
             productSelect.addEventListener('change', function() {

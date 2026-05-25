@@ -59,8 +59,10 @@
                         };
                         $customerLabel = $order->customer_name ?: $order->user->name ?? 'Tidak Diketahui';
                         $isOnlineOrder = $order->source === 'online';
+                        $isOfflineQrisOrder = $order->source === 'offline' && $order->payment_method === 'qris_dummy';
                         $canApproveOrder =
-                            $status === 'pending' && (!$isOnlineOrder || $order->payment_status === 'paid');
+                            $status === 'pending' &&
+                            ((!$isOnlineOrder && !$isOfflineQrisOrder) || $order->payment_status === 'paid');
                         $paymentApprovalInfo = match ($order->payment_status) {
                             'pending' => 'Menunggu pembayaran penyewa',
                             'failed' => 'Pembayaran penyewa gagal',

@@ -42,6 +42,15 @@ class ProductVariant extends Model
    */
   public function availabilityLabel(): string
   {
-    return $this->stock > 0 ? 'Tersedia' : 'Sedang Disewa';
+    if ($this->status !== 'tersedia') {
+      return match ($this->status) {
+        'disewa' => 'Sedang Disewa',
+        'rusak' => 'Rusak',
+        'hilang' => 'Hilang',
+        default => 'Tidak Tersedia',
+      };
+    }
+
+    return $this->stock > 0 ? 'Tersedia' : 'Stok Habis';
   }
 }

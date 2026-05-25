@@ -87,7 +87,8 @@ class DashboardController extends Controller
                 'popular_products' => Product::with(['images', 'variants'])
                     ->where('status', 'active')
                     ->whereHas('variants', function ($q) {
-                        $q->where('stock', '>', 0);
+                        $q->where('stock', '>', 0)
+                            ->where('status', 'tersedia');
                     })
                     ->withCount('orders')
                     ->orderByDesc('orders_count')

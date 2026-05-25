@@ -99,7 +99,14 @@ class Product extends Model
      */
     public function isAvailable(): bool
     {
-        return $this->totalStock() > 0;
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->contains(fn (ProductVariant $variant) => $variant->stock > 0 && $variant->status === 'tersedia');
+        }
+
+        return $this->variants()
+            ->where('stock', '>', 0)
+            ->where('status', 'tersedia')
+            ->exists();
     }
 
     /**

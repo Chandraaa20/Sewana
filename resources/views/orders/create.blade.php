@@ -6,7 +6,10 @@
 @section('content')
     @php
         $today = now()->toDateString();
-        $availableVariantCount = $product->variants->where('stock', '>', 0)->count();
+        $availableVariantCount = $product->variants
+            ->where('stock', '>', 0)
+            ->where('status', 'tersedia')
+            ->count();
         $oldStartDate = old('start_date');
         $minimumEndDate = $oldStartDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $oldStartDate) && $oldStartDate >= $today
             ? $oldStartDate
@@ -119,17 +122,17 @@
                                     @foreach ($product->variants as $variant)
                                         <option value="{{ $variant->id }}" data-price="{{ $variant->price }}"
                                             {{ old('variant_id') == $variant->id ? 'selected' : '' }}
-                                            {{ $variant->stock <= 0 ? 'disabled' : '' }}>
+                                            {{ $variant->stock <= 0 || $variant->status !== 'tersedia' ? 'disabled' : '' }}>
                                             {{ $variant->size }} - {{ $variant->color }} |
                                             Rp{{ number_format($variant->price, 0, ',', '.') }}/hari
-                                            ({{ $variant->stock > 0 ? 'Stok: ' . $variant->stock : 'Stok habis' }})
+                                            ({{ $variant->stock > 0 && $variant->status === 'tersedia' ? 'Stok: ' . $variant->stock : $variant->availabilityLabel() }})
                                         </option>
                                     @endforeach
                                 </select>
                                 @if ($availableVariantCount === 0)
-                                    <small class="text-danger">Semua varian produk ini sedang stok habis. Silakan pilih produk lain.</small>
+                                    <small class="text-danger">Semua varian produk ini sedang tidak tersedia. Silakan pilih produk lain.</small>
                                 @else
-                                    <small class="text-muted">Varian dengan stok habis tidak dapat dipilih.</small>
+                                    <small class="text-muted">Varian dengan stok habis, disewa, rusak, atau hilang tidak dapat dipilih.</small>
                                 @endif
                             </div>
 

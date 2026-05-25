@@ -217,18 +217,11 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $hasProductOrders = $product->orders()
-            ->whereIn('order_status', ['pending', 'approved', 'rented'])
-            ->exists();
-
-        $hasVariantOrders = $product->variants()
-            ->whereHas('orders', function ($q) {
-                $q->whereIn('order_status', ['pending', 'approved', 'rented']);
-            })
-            ->exists();
+        $hasProductOrders = $product->orders()->exists();
+        $hasVariantOrders = $product->variants()->whereHas('orders')->exists();
 
         if ($hasProductOrders || $hasVariantOrders) {
-            return back()->with('error', 'Produk tidak bisa dihapus karena masih memiliki riwayat atau transaksi sewa.');
+            return back()->with('error', 'Produk tidak bisa dihapus karena sudah memiliki riwayat pesanan.');
         }
 
         DB::transaction(function () use ($product) {
@@ -254,7 +247,8 @@ class ProductController extends Controller
         $products = Product::with(['images', 'variants'])
             ->where('status', 'active')
             ->whereHas('variants', function ($q) {
-                $q->where('stock', '>', 0);
+                $q->where('stock', '>', 0)
+                    ->where('status', 'tersedia');
             })
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
