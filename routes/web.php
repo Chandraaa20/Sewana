@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
                     Route::patch('/{id}/handover', 'handover')->name('handover');
                     Route::patch('/{id}/returned', 'returned')->name('returned');
                     Route::patch('/{id}/approve', 'approve')->name('approve');
+                    Route::patch('/{id}/cancel-approved', 'cancelApproved')->name('cancel-approved');
                     Route::patch('/{id}/reject', 'reject')->name('reject');
                     Route::patch('/{id}/payment', 'updatePaymentStatus')->name('payment');
                 });

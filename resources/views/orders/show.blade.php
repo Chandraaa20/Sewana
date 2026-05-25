@@ -478,6 +478,16 @@
                                             <i class="bi bi-box-seam me-1"></i> Serahkan Barang (Ubah ke Sedang Disewa)
                                         </button>
                                     </form>
+                                    <form action="{{ route('pegawai.orders.cancel-approved', $order->id) }}" method="POST"
+                                        class="mt-2" data-confirm data-confirm-title="Batalkan pesanan disetujui?"
+                                        data-confirm-message="Pesanan #{{ $order->id }} akan dibatalkan sebelum handover dan stok varian akan dikembalikan."
+                                        data-confirm-label="Batalkan Pesanan">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="btn btn-outline-danger w-100 rounded-pill fw-semibold bg-white py-2">
+                                            <i class="bi bi-x-lg me-1"></i> Batalkan / No-show
+                                        </button>
+                                    </form>
 
                                     {{-- Jika RENTED --}}
                                 @elseif ($status === 'rented')

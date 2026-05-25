@@ -595,6 +595,27 @@ class OrderController extends Controller
         });
     }
 
+    /** Cancel an approved order before handover and restore reserved stock. */
+    public function cancelApproved($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $order = Order::lockForUpdate()->findOrFail($id);
+
+            if ($order->order_status !== Order::ORDER_STATUS_APPROVED) {
+                return back()->with('error', 'Hanya pesanan yang sudah disetujui dan belum diserahkan yang bisa dibatalkan lewat aksi ini.');
+            }
+
+            if ($order->variant_id) {
+                $variant = ProductVariant::lockForUpdate()->findOrFail($order->variant_id);
+                $variant->increment('stock', 1);
+            }
+
+            $order->update(['order_status' => Order::ORDER_STATUS_CANCELLED]);
+
+            return back()->with('success', 'Pesanan disetujui berhasil dibatalkan dan stok telah dikembalikan.');
+        });
+    }
+
     /** Reject a pending online order. */
     public function reject($id)
     {
