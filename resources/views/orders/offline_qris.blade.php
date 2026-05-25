@@ -52,6 +52,12 @@
                                 Buka URL pembayaran Xendit
                             </a>
                         @endif
+
+                        @if (!in_array($order->payment_status, ['paid', 'failed', 'expired'], true))
+                            <p class="text-muted small mt-3 mb-0" id="order-status-polling-note">
+                                Menunggu konfirmasi pembayaran...
+                            </p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -154,4 +160,39 @@
             </div>
         </div>
     </div>
+
+    <script>
+        (() => {
+            const statusUrl = @json(route('pegawai.orders.status', $order->id));
+            let currentOrderStatus = @json($order->order_status);
+            let currentPaymentStatus = @json($order->payment_status);
+            const finalOrderStatuses = ['returned', 'cancelled'];
+            const finalPaymentStatuses = ['failed', 'expired'];
+
+            if (finalOrderStatuses.includes(currentOrderStatus) || finalPaymentStatuses.includes(currentPaymentStatus)) {
+                return;
+            }
+
+            const timer = window.setInterval(async () => {
+                try {
+                    const response = await fetch(statusUrl, {
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) return;
+
+                    const data = await response.json();
+                    if (data.order_status !== currentOrderStatus || data.payment_status !== currentPaymentStatus) {
+                        window.clearInterval(timer);
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    // Ignore transient network errors; the next interval will retry.
+                }
+            }, 5000);
+        })();
+    </script>
 @endsection

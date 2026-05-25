@@ -72,6 +72,11 @@
                                     URL pembayaran Xendit belum tersedia. Silakan hubungi petugas.
                                 </div>
                             @endif
+                            @if (!in_array($order->payment_status, ['paid', 'failed', 'expired'], true))
+                                <p class="text-muted small mb-3" id="order-status-polling-note">
+                                    Menunggu konfirmasi pembayaran...
+                                </p>
+                            @endif
                             @if (app()->environment(['local', 'development', 'testing']) && $order->payment_status !== 'paid')
                                 <div class="alert alert-secondary rounded-4 small mb-3">
                                     Fallback lokal untuk demo jika webhook Xendit Sandbox belum dapat diterima.
@@ -94,4 +99,39 @@
             </div>
         </div>
     </div>
+
+    <script>
+        (() => {
+            const statusUrl = @json(route('penyewa.orders.status', $order->id));
+            let currentOrderStatus = @json($order->order_status);
+            let currentPaymentStatus = @json($order->payment_status);
+            const finalOrderStatuses = ['returned', 'cancelled'];
+            const finalPaymentStatuses = ['failed', 'expired'];
+
+            if (finalOrderStatuses.includes(currentOrderStatus) || finalPaymentStatuses.includes(currentPaymentStatus)) {
+                return;
+            }
+
+            const timer = window.setInterval(async () => {
+                try {
+                    const response = await fetch(statusUrl, {
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) return;
+
+                    const data = await response.json();
+                    if (data.order_status !== currentOrderStatus || data.payment_status !== currentPaymentStatus) {
+                        window.clearInterval(timer);
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    // Ignore transient network errors; the next interval will retry.
+                }
+            }, 5000);
+        })();
+    </script>
 @endsection

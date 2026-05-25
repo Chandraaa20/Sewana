@@ -90,6 +90,7 @@ Route::middleware('auth')->group(function () {
                     Route::patch('/{id}/payment', 'updatePaymentStatus')->name('payment');
                 });
 
+                Route::get('/{id}/status', 'status')->middleware('permission:orders.read')->name('status');
                 Route::get('/{id}', 'show')->middleware('permission:orders.read')->name('show');
             });
         });
@@ -107,6 +108,7 @@ Route::middleware('auth')->group(function () {
                 Route::post('/store', 'store')->name('store');
                 Route::get('/{id}/payment/instructions', [PaymentInstructionController::class, 'show'])
                     ->name('payment.instructions');
+                Route::get('/{id}/status', [OrderController::class, 'status'])->name('status');
                 if (app()->environment(['local', 'development', 'testing'])) {
                     Route::post('/{id}/payment/simulate-success', [PaymentInstructionController::class, 'simulateSuccess'])
                         ->name('payment.simulate-success');

@@ -503,4 +503,56 @@
     </div>
 
     {{-- Sedikit CSS untuk mempercantik border dashed foto --}}
+    @php
+        $statusUrl = auth()
+            ->user()
+            ->hasAnyRole(['pegawai', 'pemilik'])
+            ? route('pegawai.orders.status', $order->id)
+            : route('penyewa.orders.status', $order->id);
+    @endphp
+
+    <script>
+        (() => {
+            const statusUrl = @json($statusUrl);
+            let currentOrderStatus = @json($order->order_status);
+            let currentPaymentStatus = @json($order->payment_status);
+
+            const finalOrderStatuses = ['returned', 'cancelled'];
+            const finalPaymentStatuses = ['failed', 'expired'];
+
+            if (
+                finalOrderStatuses.includes(currentOrderStatus) ||
+                finalPaymentStatuses.includes(currentPaymentStatus)
+            ) {
+                return;
+            }
+
+            const timer = window.setInterval(async () => {
+                try {
+                    const response = await fetch(statusUrl, {
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    if (
+                        data.order_status !== currentOrderStatus ||
+                        data.payment_status !== currentPaymentStatus
+                    ) {
+                        window.clearInterval(timer);
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    // Abaikan error koneksi sementara, polling berikutnya akan coba lagi.
+                }
+            }, 5000);
+        })();
+    </script>
 @endsection

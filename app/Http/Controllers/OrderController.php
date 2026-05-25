@@ -608,6 +608,26 @@ class OrderController extends Controller
         return view('orders.show', compact('order', 'verificationUrl', 'verificationQrCodeSvg'));
     }
 
+    public function status($id)
+    {
+        $order = Order::query()->findOrFail($id);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if (! $user->hasAnyRole(['pegawai', 'pemilik']) && (int) $order->user_id !== (int) Auth::id()) {
+            abort(403, 'Tidak berwenang melihat status pesanan ini.');
+        }
+
+        return response()->json([
+            'order_id' => $order->id,
+            'order_status' => $order->order_status,
+            'payment_status' => $order->payment_status,
+            'payment_method' => $order->payment_method,
+            'updated_at' => $order->updated_at?->toISOString(),
+        ]);
+    }
+
     private function generateQrCodeSvg(string $content): string
     {
         $renderer = new ImageRenderer(
