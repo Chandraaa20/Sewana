@@ -47,6 +47,8 @@
                             'rented' => 'info',
                             'returned' => 'success',
                             'cancelled' => 'danger',
+                            'rejected' => 'danger',
+                            'refunded' => 'secondary',
                             default => 'secondary',
                         };
                         $statusLabel = match ($status) {
@@ -55,6 +57,8 @@
                             'rented' => 'Sedang Disewa',
                             'returned' => 'Dikembalikan',
                             'cancelled' => 'Dibatalkan',
+                            'rejected' => 'Ditolak',
+                            'refunded' => 'Refund',
                             default => 'Tidak Diketahui',
                         };
                         $customerLabel = $order->customer_name ?: $order->user->name ?? 'Tidak Diketahui';

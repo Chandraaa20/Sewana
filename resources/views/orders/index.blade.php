@@ -85,6 +85,8 @@
                                                 'rented' => 'info',
                                                 'returned' => 'success',
                                                 'cancelled' => 'danger',
+                                                'rejected' => 'danger',
+                                                'refunded' => 'secondary',
                                                 default => 'secondary',
                                             };
                                             $paymentClass = $order->payment_status === 'paid' ? 'success' : 'danger';
@@ -94,6 +96,8 @@
                                                 'rented' => 'Sedang Disewa',
                                                 'returned' => 'Dikembalikan',
                                                 'cancelled' => 'Dibatalkan',
+                                                'rejected' => 'Ditolak',
+                                                'refunded' => 'Refund',
                                                 default => 'Tidak Diketahui',
                                             };
                                             $paymentLabel = match ($order->payment_status) {
@@ -103,6 +107,9 @@
                                                 'expired' => 'Pembayaran Kedaluwarsa',
                                                 default => 'Tidak Diketahui',
                                             };
+                                            $canDeleteOrder =
+                                                in_array($order->order_status, ['pending', 'cancelled'], true) &&
+                                                $order->payment_status !== 'paid';
                                         @endphp
 
                                         <div class="customer-order-status">
@@ -126,18 +133,20 @@
                                                 <i class="bi bi-eye me-1"></i> Detail
                                             </a>
 
-                                            <form action="{{ route('penyewa.orders.destroy', $order->id) }}" method="POST"
-                                                data-confirm data-confirm-title="Hapus pesanan?"
-                                                data-confirm-message="Pesanan #{{ $order->id }} akan dihapus dari daftar Anda jika masih bisa dihapus."
-                                                data-confirm-label="Hapus Pesanan">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="btn btn-light text-danger rounded-pill customer-order-delete"
-                                                    aria-label="Hapus pesanan {{ $order->id }}">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
+                                            @if ($canDeleteOrder)
+                                                <form action="{{ route('penyewa.orders.destroy', $order->id) }}" method="POST"
+                                                    data-confirm data-confirm-title="Hapus pesanan?"
+                                                    data-confirm-message="Pesanan #{{ $order->id }} akan dihapus dari daftar Anda jika masih bisa dihapus."
+                                                    data-confirm-label="Hapus Pesanan">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="btn btn-light text-danger rounded-pill customer-order-delete"
+                                                        aria-label="Hapus pesanan {{ $order->id }}">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

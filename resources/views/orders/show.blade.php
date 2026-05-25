@@ -47,6 +47,8 @@
                 'rented' => ['color' => 'info', 'label' => 'Sedang Disewa', 'icon' => 'arrow-repeat'],
                 'returned' => ['color' => 'success', 'label' => 'Dikembalikan', 'icon' => 'check-circle'],
                 'cancelled' => ['color' => 'danger', 'label' => 'Dibatalkan', 'icon' => 'x-circle'],
+                'rejected' => ['color' => 'danger', 'label' => 'Ditolak', 'icon' => 'x-circle'],
+                'refunded' => ['color' => 'secondary', 'label' => 'Refund', 'icon' => 'arrow-counterclockwise'],
                 default => ['color' => 'secondary', 'label' => 'Tidak Diketahui', 'icon' => 'question-circle'],
             };
 
@@ -67,11 +69,15 @@
             $isOnlineOrder = $order->source === 'online';
             $isOfflineQrisOrder = $order->source === 'offline' && $order->payment_method === 'qris';
             $isOfflineCashOrder = $order->source === 'offline' && $order->payment_method === 'cash';
+            $closedPaymentOrderStatuses = ['cancelled', 'rejected', 'refunded'];
+            $isClosedPaymentOrder = in_array($status, $closedPaymentOrderStatuses, true);
 
             $canApproveOrder =
                 $status === 'pending' &&
                 ((!$isOnlineOrder && !$isOfflineQrisOrder) || $order->payment_status === 'paid');
             $canRejectOrder = $status === 'pending' && $order->payment_status !== 'paid';
+            $canContinueOnlinePayment =
+                $isOnlineOrder && $order->payment_status === 'pending' && !$isClosedPaymentOrder;
             $paymentApprovalInfo = match ($order->payment_status) {
                 'pending' => $isOfflineQrisOrder ? 'Menunggu proses pembayaran' : 'Menunggu pembayaran penyewa',
                 'failed' => 'Pembayaran penyewa gagal',
@@ -337,7 +343,7 @@
                         @endif
                     </div>
                 </div>
-                @if ($isOnlineOrder && $order->payment_status === 'pending')
+                @if ($canContinueOnlinePayment)
                     <div class="card shadow-sm rounded-4 border-start border-4 border-warning">
                         <div class="card-body p-4">
                             <h6 class="fw-bold text-dark mb-2">

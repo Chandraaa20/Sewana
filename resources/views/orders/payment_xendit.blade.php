@@ -8,6 +8,10 @@
             'failed' => 'Pembayaran Gagal',
             'expired' => 'Pembayaran Kedaluwarsa',
         ];
+        $closedPaymentOrderStatuses = ['cancelled', 'rejected', 'refunded'];
+        $isClosedPaymentOrder = in_array($order->order_status, $closedPaymentOrderStatuses, true);
+        $canContinuePayment =
+            !$isClosedPaymentOrder && !in_array($order->payment_status, ['paid', 'failed', 'expired'], true);
     @endphp
 
     <div class="admin-page">
@@ -63,21 +67,25 @@
                                 Klik tombol di bawah untuk membuka halaman pembayaran Xendit Sandbox. Status pembayaran
                                 akan diperbarui otomatis melalui webhook Xendit.
                             </p>
-                            @if ($paymentUrl)
+                            @if ($canContinuePayment && $paymentUrl)
                                 <a href="{{ $paymentUrl }}" class="btn btn-dark rounded-pill px-4 w-100 mb-3">
                                     Buka Pembayaran Xendit
                                 </a>
+                            @elseif (!$canContinuePayment)
+                                <div class="alert alert-info rounded-4 small mb-3">
+                                    Pembayaran tidak bisa dilanjutkan karena status pesanan atau pembayaran sudah final.
+                                </div>
                             @else
                                 <div class="alert alert-warning rounded-4 small mb-3">
                                     URL pembayaran Xendit belum tersedia. Silakan hubungi petugas.
                                 </div>
                             @endif
-                            @if (!in_array($order->payment_status, ['paid', 'failed', 'expired'], true))
+                            @if ($canContinuePayment)
                                 <p class="text-muted small mb-3" id="order-status-polling-note">
                                     Menunggu konfirmasi pembayaran...
                                 </p>
                             @endif
-                            @if (app()->environment(['local', 'development', 'testing']) && $order->payment_status !== 'paid')
+                            @if (app()->environment(['local', 'development', 'testing']) && $canContinuePayment)
                                 <div class="alert alert-secondary rounded-4 small mb-3">
                                     Fallback lokal untuk demo jika webhook Xendit Sandbox belum dapat diterima.
                                 </div>
@@ -105,7 +113,7 @@
             const statusUrl = @json(route('penyewa.orders.status', $order->id));
             let currentOrderStatus = @json($order->order_status);
             let currentPaymentStatus = @json($order->payment_status);
-            const finalOrderStatuses = ['returned', 'cancelled'];
+            const finalOrderStatuses = ['returned', 'cancelled', 'rejected', 'refunded'];
             const finalPaymentStatuses = ['failed', 'expired'];
 
             if (finalOrderStatuses.includes(currentOrderStatus) || finalPaymentStatuses.includes(currentPaymentStatus)) {

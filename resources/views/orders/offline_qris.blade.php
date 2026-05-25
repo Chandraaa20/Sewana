@@ -1,6 +1,19 @@
 @extends('layouts.admin')
 
 @section('content')
+    @php
+        $closedPaymentOrderStatuses = ['cancelled', 'rejected', 'refunded'];
+        $isClosedPaymentOrder = in_array($order->order_status, $closedPaymentOrderStatuses, true);
+        $canContinuePayment =
+            !$isClosedPaymentOrder && !in_array($order->payment_status, ['paid', 'failed', 'expired'], true);
+        $paymentStatusData = match ($order->payment_status) {
+            'paid' => ['class' => 'success', 'label' => 'Sudah Dibayar'],
+            'failed' => ['class' => 'danger', 'label' => 'Pembayaran Gagal'],
+            'expired' => ['class' => 'danger', 'label' => 'Pembayaran Kedaluwarsa'],
+            default => ['class' => 'warning text-dark', 'label' => 'Menunggu Pembayaran'],
+        };
+    @endphp
+
     <div class="admin-page">
         <div class="admin-page-header">
             <div>
@@ -26,14 +39,18 @@
                     </div>
 
                     <div class="admin-card-body text-center">
-                        @if (!empty($qrImageUrl))
+                        @if ($canContinuePayment && !empty($qrImageUrl))
                             <div class="bg-white border rounded-4 p-4 d-inline-block shadow-sm">
                                 <img src="{{ $qrImageUrl }}" alt="QRIS Xendit pesanan #{{ $order->id }}"
                                     class="img-fluid" width="220" height="220">
                             </div>
-                        @elseif ($paymentQrCodeSvg)
+                        @elseif ($canContinuePayment && $paymentQrCodeSvg)
                             <div class="bg-white border rounded-4 p-4 d-inline-block shadow-sm">
                                 {!! $paymentQrCodeSvg !!}
+                            </div>
+                        @elseif (!$canContinuePayment)
+                            <div class="alert alert-info rounded-4 small mb-0">
+                                Pembayaran QRIS tidak bisa dilanjutkan karena status pesanan atau pembayaran sudah final.
                             </div>
                         @else
                             <div class="alert alert-warning rounded-4 small mb-0">
@@ -41,19 +58,19 @@
                             </div>
                         @endif
 
-                        @if ($paymentQrCodeSvg || !empty($qrImageUrl))
+                        @if ($canContinuePayment && ($paymentQrCodeSvg || !empty($qrImageUrl)))
                             <p class="text-muted small mt-3 mb-0">
                                 Pindai QR ini untuk membuka pembayaran Xendit Sandbox.
                             </p>
                         @endif
 
-                        @if ($paymentUrl)
+                        @if ($canContinuePayment && $paymentUrl)
                             <a href="{{ $paymentUrl }}" target="_blank" rel="noopener" class="small text-decoration-none">
                                 Buka URL pembayaran Xendit
                             </a>
                         @endif
 
-                        @if (!in_array($order->payment_status, ['paid', 'failed', 'expired'], true))
+                        @if ($canContinuePayment)
                             <p class="text-muted small mt-3 mb-0" id="order-status-polling-note">
                                 Menunggu konfirmasi pembayaran...
                             </p>
@@ -97,12 +114,9 @@
 
                             <div class="col-md-6">
                                 <div class="admin-mini-label">Status Pembayaran</div>
-                                @if ($order->payment_status === 'paid')
-                                    <span class="badge bg-success rounded-pill px-3 py-2">Sudah Dibayar</span>
-                                @else
-                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2">Menunggu
-                                        Pembayaran</span>
-                                @endif
+                                <span class="badge bg-{{ $paymentStatusData['class'] }} rounded-pill px-3 py-2">
+                                    {{ $paymentStatusData['label'] }}
+                                </span>
                             </div>
 
                             <div class="col-md-6">
@@ -131,7 +145,7 @@
 
                         <hr class="my-4">
 
-                        @if ($order->payment_status !== 'paid')
+                        @if ($canContinuePayment)
                             @env(['local', 'development', 'testing'])
                                 <div class="alert alert-secondary rounded-4 small mb-3">
                                     Fallback lokal untuk demo jika webhook Xendit Sandbox belum dapat diterima.
@@ -145,7 +159,7 @@
                                     </button>
                                 </form>
                             @endenv
-                        @else
+                        @elseif ($order->payment_status === 'paid')
                             <div class="alert alert-success rounded-4 mb-3">
                                 Pembayaran sudah diterima. Pesanan masih menunggu persetujuan/penyerahan barang.
                             </div>
@@ -154,6 +168,10 @@
                                 class="btn btn-dark rounded-pill px-4">
                                 Buka Detail Pesanan
                             </a>
+                        @else
+                            <div class="alert alert-info rounded-4 mb-3">
+                                Pembayaran tidak bisa dilanjutkan karena status pesanan atau pembayaran sudah final.
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -166,7 +184,7 @@
             const statusUrl = @json(route('pegawai.orders.status', $order->id));
             let currentOrderStatus = @json($order->order_status);
             let currentPaymentStatus = @json($order->payment_status);
-            const finalOrderStatuses = ['returned', 'cancelled'];
+            const finalOrderStatuses = ['returned', 'cancelled', 'rejected', 'refunded'];
             const finalPaymentStatuses = ['failed', 'expired'];
 
             if (finalOrderStatuses.includes(currentOrderStatus) || finalPaymentStatuses.includes(currentPaymentStatus)) {

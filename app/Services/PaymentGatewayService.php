@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -58,17 +59,28 @@ class PaymentGatewayService
 
     public function markPaymentPaid(Order $order, array $payload = []): Order
     {
-        if ($order->payment_status !== Order::PAYMENT_STATUS_PAID && ! $this->canReceivePaidStatus($order)) {
-            return $order->fresh() ?: $order;
-        }
+        return DB::transaction(function () use ($order, $payload) {
+            $lockedOrder = Order::query()
+                ->whereKey($order->getKey())
+                ->lockForUpdate()
+                ->first();
 
-        $order->update([
-            'payment_status' => Order::PAYMENT_STATUS_PAID,
-            'paid_at' => $order->paid_at ?: now(),
-            'payment_payload' => $payload ?: $order->payment_payload,
-        ]);
+            if (! $lockedOrder) {
+                return $order->fresh() ?: $order;
+            }
 
-        return $order;
+            if ($lockedOrder->payment_status !== Order::PAYMENT_STATUS_PAID && ! $this->canReceivePaidStatus($lockedOrder)) {
+                return $lockedOrder;
+            }
+
+            $lockedOrder->update([
+                'payment_status' => Order::PAYMENT_STATUS_PAID,
+                'paid_at' => $lockedOrder->paid_at ?: now(),
+                'payment_payload' => $payload ?: $lockedOrder->payment_payload,
+            ]);
+
+            return $lockedOrder->fresh() ?: $lockedOrder;
+        });
     }
 
     public function markPaymentFailed(Order $order, array $payload = []): Order
@@ -110,53 +122,57 @@ class PaymentGatewayService
             throw new RuntimeException('Payload webhook Xendit tidak memiliki external_id.', 400);
         }
 
-        $order = Order::where('payment_reference', $reference)->first();
-
-        if (! $order) {
-            return null;
-        }
-
         $paidAmount = $this->extractAmount($payload);
-
-        if ($paidAmount !== null) {
-            $expectedAmount = (int) round((float) $order->total_price);
-
-            if ($expectedAmount !== $paidAmount) {
-                throw new RuntimeException('Nominal pembayaran Xendit tidak sesuai dengan tagihan.', 422);
-            }
-        }
-
         $newStatus = $this->mapXenditStatus($payload);
-        $paymentPayload = is_array($order->payment_payload) ? $order->payment_payload : [];
-        $paymentPayload['last_webhook'] = $payload;
-        $paymentPayload['last_webhook_at'] = now()->toISOString();
 
-        $updates = [
-            'payment_gateway' => 'xendit',
-            'payment_payload' => $paymentPayload,
-        ];
+        return DB::transaction(function () use ($reference, $payload, $paidAmount, $newStatus) {
+            $order = Order::where('payment_reference', $reference)
+                ->lockForUpdate()
+                ->first();
 
-        if ($newStatus) {
-            $resolvedPaymentStatus = $this->resolvePaymentStatus($order, $newStatus);
-
-            if (
-                $resolvedPaymentStatus === Order::PAYMENT_STATUS_PAID
-                && $order->payment_status !== Order::PAYMENT_STATUS_PAID
-                && ! $this->canReceivePaidStatus($order)
-            ) {
-                $resolvedPaymentStatus = $order->payment_status;
+            if (! $order) {
+                return null;
             }
 
-            $updates['payment_status'] = $resolvedPaymentStatus;
+            if ($paidAmount !== null) {
+                $expectedAmount = (int) round((float) $order->total_price);
 
-            if ($updates['payment_status'] === Order::PAYMENT_STATUS_PAID && ! $order->paid_at) {
-                $updates['paid_at'] = $this->extractPaidAt($payload) ?? now();
+                if ($expectedAmount !== $paidAmount) {
+                    throw new RuntimeException('Nominal pembayaran Xendit tidak sesuai dengan tagihan.', 422);
+                }
             }
-        }
 
-        $order->update($updates);
+            $paymentPayload = is_array($order->payment_payload) ? $order->payment_payload : [];
+            $paymentPayload['last_webhook'] = $payload;
+            $paymentPayload['last_webhook_at'] = now()->toISOString();
 
-        return $order->fresh();
+            $updates = [
+                'payment_gateway' => 'xendit',
+                'payment_payload' => $paymentPayload,
+            ];
+
+            if ($newStatus) {
+                $resolvedPaymentStatus = $this->resolvePaymentStatus($order, $newStatus);
+
+                if (
+                    $resolvedPaymentStatus === Order::PAYMENT_STATUS_PAID
+                    && $order->payment_status !== Order::PAYMENT_STATUS_PAID
+                    && ! $this->canReceivePaidStatus($order)
+                ) {
+                    $resolvedPaymentStatus = $order->payment_status;
+                }
+
+                $updates['payment_status'] = $resolvedPaymentStatus;
+
+                if ($updates['payment_status'] === Order::PAYMENT_STATUS_PAID && ! $order->paid_at) {
+                    $updates['paid_at'] = $this->extractPaidAt($payload) ?? now();
+                }
+            }
+
+            $order->update($updates);
+
+            return $order->fresh();
+        });
     }
 
     private function postInvoice(array $payload)

@@ -569,6 +569,10 @@ class OrderController extends Controller
                 return back()->with('error', 'Pesanan sudah diproses dan tidak bisa dibatalkan.');
             }
 
+            if ($order->payment_status === Order::PAYMENT_STATUS_PAID) {
+                return back()->with('error', 'Pesanan yang sudah dibayar tidak bisa dibatalkan lewat aksi batal biasa.');
+            }
+
             $order->update(['order_status' => Order::ORDER_STATUS_CANCELLED]);
 
             return back()->with('success', 'Pesanan berhasil dibatalkan.');
