@@ -53,4 +53,17 @@ class ProductVariant extends Model
 
     return $this->stock > 0 ? 'Tersedia' : 'Stok Habis';
   }
+
+  public function availableStockForPeriod($startDate, $endDate, ?int $excludeOrderId = null): int
+  {
+    // stock is current available stock. Approved/rented orders already decrement it;
+    // pending paid orders have not decremented stock yet, but should hold availability.
+    $overlapCount = $this->orders()
+      ->pendingPaidHolding()
+      ->overlappingPeriod($startDate, $endDate)
+      ->when($excludeOrderId, fn($query) => $query->whereKeyNot($excludeOrderId))
+      ->count();
+
+    return max(0, (int) $this->stock - $overlapCount);
+  }
 }

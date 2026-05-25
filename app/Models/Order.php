@@ -178,6 +178,36 @@ class Order extends Model
         return $query->where('order_status', self::ORDER_STATUS_RETURNED);
     }
 
+    public function scopeOverlappingPeriod($query, $startDate, $endDate)
+    {
+        return $query
+            ->where('start_date', '<=', $endDate)
+            ->where('end_date', '>=', $startDate);
+    }
+
+    public function scopeStockHolding($query)
+    {
+        return $query->where(function ($statusQuery) {
+            $statusQuery
+                ->whereIn('order_status', [
+                    self::ORDER_STATUS_APPROVED,
+                    self::ORDER_STATUS_RENTED,
+                ])
+                ->orWhere(function ($paidPendingQuery) {
+                    $paidPendingQuery
+                        ->where('order_status', self::ORDER_STATUS_PENDING)
+                        ->where('payment_status', self::PAYMENT_STATUS_PAID);
+                });
+        });
+    }
+
+    public function scopePendingPaidHolding($query)
+    {
+        return $query
+            ->where('order_status', self::ORDER_STATUS_PENDING)
+            ->where('payment_status', self::PAYMENT_STATUS_PAID);
+    }
+
     public function identityPhotoUrl(): ?string
     {
         return $this->publicDiskUrl($this->identity_photo);

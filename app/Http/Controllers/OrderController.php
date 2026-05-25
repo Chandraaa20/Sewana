@@ -168,6 +168,12 @@ class OrderController extends Controller
             $end = Carbon::createFromFormat('Y-m-d', $request->end_date)->startOfDay();
             $rentDays = $start->diffInDays($end) + 1;
 
+            if ($variant->availableStockForPeriod($request->start_date, $request->end_date) <= 0) {
+                return back()
+                    ->with('error', 'Stok varian tidak tersedia pada rentang tanggal sewa yang dipilih.')
+                    ->withInput();
+            }
+
             $totalPrice = $variant->price * $rentDays;
             $photoPath = $request->file('identity_photo')->store('identity_photos', 'public');
 
@@ -305,6 +311,12 @@ class OrderController extends Controller
             $start = Carbon::createFromFormat('Y-m-d', $request->start_date)->startOfDay();
             $end = Carbon::createFromFormat('Y-m-d', $request->end_date)->startOfDay();
             $rentDays = $start->diffInDays($end) + 1;
+
+            if ($variant->availableStockForPeriod($request->start_date, $request->end_date) <= 0) {
+                throw ValidationException::withMessages([
+                    'variant_id' => 'Stok varian tidak tersedia pada rentang tanggal sewa yang dipilih.',
+                ]);
+            }
 
             $totalPrice = $variant->price * $rentDays;
             $totalAmount = (int) round($totalPrice);
@@ -488,6 +500,10 @@ class OrderController extends Controller
 
             if (! $variant->product || $variant->product->status !== 'active') {
                 return back()->with('error', 'Gagal menyetujui: produk sedang tidak aktif.');
+            }
+
+            if ($variant->availableStockForPeriod($order->start_date, $order->end_date, $order->id) <= 0) {
+                return back()->with('error', 'Gagal menyetujui: stok varian tidak tersedia pada rentang tanggal sewa pesanan ini.');
             }
 
             // Decrement stock because the item has been reserved or paid.
