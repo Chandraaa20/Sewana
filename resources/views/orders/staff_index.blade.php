@@ -64,6 +64,7 @@
                         $canApproveOrder =
                             $status === 'pending' &&
                             ((!$isOnlineOrder && !$isOfflineQrisOrder) || $order->payment_status === 'paid');
+                        $canRejectOrder = $status === 'pending' && $order->payment_status !== 'paid';
                         $paymentApprovalInfo = match ($order->payment_status) {
                             'pending' => $isOfflineQrisOrder ? 'Menunggu proses pembayaran' : 'Menunggu pembayaran penyewa',
                             'failed' => 'Pembayaran penyewa gagal',
@@ -186,16 +187,22 @@
                                             </div>
                                         @endif
 
-                                        <form action="{{ route('pegawai.orders.reject', $order->id) }}" method="POST"
-                                            data-confirm data-confirm-title="Tolak pesanan?"
-                                            data-confirm-message="Pesanan #{{ $order->id }} akan dibatalkan dan tidak bisa diproses sebagai sewa aktif."
-                                            data-confirm-label="Tolak Pesanan">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button class="btn btn-danger rounded-3 w-100 fw-semibold shadow-sm">
-                                                <i class="bi bi-x-lg"></i> Batalkan
-                                            </button>
-                                        </form>
+                                        @if ($canRejectOrder)
+                                            <form action="{{ route('pegawai.orders.reject', $order->id) }}" method="POST"
+                                                data-confirm data-confirm-title="Tolak pesanan?"
+                                                data-confirm-message="Pesanan #{{ $order->id }} akan dibatalkan dan tidak bisa diproses sebagai sewa aktif."
+                                                data-confirm-label="Tolak Pesanan">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button class="btn btn-danger rounded-3 w-100 fw-semibold shadow-sm">
+                                                    <i class="bi bi-x-lg"></i> Batalkan
+                                                </button>
+                                            </form>
+                                        @else
+                                            <div class="alert alert-info rounded-3 small mb-0">
+                                                Pesanan sudah dibayar dan tidak bisa dibatalkan lewat aksi tolak biasa.
+                                            </div>
+                                        @endif
 
                                         @if ($canApproveOrder)
                                             <div class="modal fade" id="approveModal{{ $order->id }}" tabindex="-1">

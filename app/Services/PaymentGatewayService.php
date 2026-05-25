@@ -58,6 +58,10 @@ class PaymentGatewayService
 
     public function markPaymentPaid(Order $order, array $payload = []): Order
     {
+        if ($order->payment_status !== Order::PAYMENT_STATUS_PAID && ! $this->canReceivePaidStatus($order)) {
+            return $order->fresh() ?: $order;
+        }
+
         $order->update([
             'payment_status' => Order::PAYMENT_STATUS_PAID,
             'paid_at' => $order->paid_at ?: now(),
@@ -133,7 +137,17 @@ class PaymentGatewayService
         ];
 
         if ($newStatus) {
-            $updates['payment_status'] = $this->resolvePaymentStatus($order, $newStatus);
+            $resolvedPaymentStatus = $this->resolvePaymentStatus($order, $newStatus);
+
+            if (
+                $resolvedPaymentStatus === Order::PAYMENT_STATUS_PAID
+                && $order->payment_status !== Order::PAYMENT_STATUS_PAID
+                && ! $this->canReceivePaidStatus($order)
+            ) {
+                $resolvedPaymentStatus = $order->payment_status;
+            }
+
+            $updates['payment_status'] = $resolvedPaymentStatus;
 
             if ($updates['payment_status'] === Order::PAYMENT_STATUS_PAID && ! $order->paid_at) {
                 $updates['paid_at'] = $this->extractPaidAt($payload) ?? now();
@@ -280,6 +294,14 @@ class PaymentGatewayService
         }
 
         return $newStatus;
+    }
+
+    private function canReceivePaidStatus(Order $order): bool
+    {
+        return in_array($order->order_status, [
+            Order::ORDER_STATUS_PENDING,
+            Order::ORDER_STATUS_APPROVED,
+        ], true);
     }
 
     private function invoiceEndpoint(): string

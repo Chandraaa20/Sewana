@@ -71,6 +71,7 @@
             $canApproveOrder =
                 $status === 'pending' &&
                 ((!$isOnlineOrder && !$isOfflineQrisOrder) || $order->payment_status === 'paid');
+            $canRejectOrder = $status === 'pending' && $order->payment_status !== 'paid';
             $paymentApprovalInfo = match ($order->payment_status) {
                 'pending' => $isOfflineQrisOrder ? 'Menunggu proses pembayaran' : 'Menunggu pembayaran penyewa',
                 'failed' => 'Pembayaran penyewa gagal',
@@ -426,16 +427,22 @@
                                             </div>
                                         @endif
 
-                                        <form action="{{ route('pegawai.orders.reject', $order->id) }}" method="POST"
-                                            class="flex-grow-1" data-confirm data-confirm-title="Tolak pesanan?"
-                                            data-confirm-message="Pesanan #{{ $order->id }} akan dibatalkan dan tidak bisa diproses sebagai sewa aktif."
-                                            data-confirm-label="Tolak Pesanan">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button class="btn btn-outline-danger w-100 rounded-pill fw-semibold bg-white">
-                                                <i class="bi bi-x-lg me-1"></i> Batalkan Pesanan
-                                            </button>
-                                        </form>
+                                        @if ($canRejectOrder)
+                                            <form action="{{ route('pegawai.orders.reject', $order->id) }}" method="POST"
+                                                class="flex-grow-1" data-confirm data-confirm-title="Tolak pesanan?"
+                                                data-confirm-message="Pesanan #{{ $order->id }} akan dibatalkan dan tidak bisa diproses sebagai sewa aktif."
+                                                data-confirm-label="Tolak Pesanan">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button class="btn btn-outline-danger w-100 rounded-pill fw-semibold bg-white">
+                                                    <i class="bi bi-x-lg me-1"></i> Batalkan Pesanan
+                                                </button>
+                                            </form>
+                                        @else
+                                            <div class="alert alert-info rounded-4 small mb-0 flex-grow-1">
+                                                Pesanan sudah dibayar, sehingga tidak bisa dibatalkan lewat aksi tolak biasa.
+                                            </div>
+                                        @endif
                                     </div>
 
                                     {{-- Jika APPROVED --}}
@@ -451,9 +458,11 @@
                                                 for="paymentSelect"><i class="bi bi-wallet2"></i></label>
                                             <select name="payment_status" id="paymentSelect"
                                                 class="form-select border-0 focus-ring focus-ring-light">
-                                                <option value="pending"
-                                                    {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Tagihan Belum
-                                                    Dibayar</option>
+                                                @if ($order->payment_status !== 'paid')
+                                                    <option value="pending"
+                                                        {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Tagihan Belum
+                                                        Dibayar</option>
+                                                @endif
                                                 <option value="paid"
                                                     {{ $order->payment_status === 'paid' ? 'selected' : '' }}>Tagihan Sudah
                                                     Lunas</option>

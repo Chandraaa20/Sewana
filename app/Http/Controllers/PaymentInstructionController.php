@@ -32,6 +32,12 @@ class PaymentInstructionController extends Controller
             ->where('source', 'online')
             ->findOrFail($id);
 
+        if (! in_array($order->order_status, [Order::ORDER_STATUS_PENDING, Order::ORDER_STATUS_APPROVED], true)) {
+            return redirect()
+                ->route('penyewa.orders.show', $order->id)
+                ->with('error', 'Pembayaran hanya bisa dikonfirmasi untuk pesanan yang masih pending atau disetujui.');
+        }
+
         if ($order->payment_status !== Order::PAYMENT_STATUS_PAID) {
             $paymentGateway->markPaymentPaid($order, [
                 'type' => 'local_payment_fallback',

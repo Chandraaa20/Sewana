@@ -423,6 +423,11 @@ class OrderController extends Controller
                 ->with('warning', 'Pembayaran pesanan ini sudah diterima.');
         }
 
+        if (! in_array($order->order_status, [Order::ORDER_STATUS_PENDING, Order::ORDER_STATUS_APPROVED], true)) {
+            return redirect()->route('pegawai.orders.offline-qris.show', $order)
+                ->with('error', 'Pembayaran hanya bisa dikonfirmasi untuk pesanan yang masih pending atau disetujui.');
+        }
+
         $order->update([
             'payment_status' => Order::PAYMENT_STATUS_PAID,
             'paid_at' => now(),
@@ -511,7 +516,11 @@ class OrderController extends Controller
                 return back()->with('error', 'Pesanan harus berstatus disetujui sebelum diserahkan. Stok tidak diubah.');
             }
 
-            $payment = $request->input('payment_status', Order::PAYMENT_STATUS_PENDING);
+            $payment = $request->input('payment_status', $order->payment_status);
+
+            if ($order->payment_status === Order::PAYMENT_STATUS_PAID && $payment !== Order::PAYMENT_STATUS_PAID) {
+                return back()->with('error', 'Status pembayaran yang sudah lunas tidak bisa diubah kembali menjadi pending.');
+            }
 
             // Do not decrement stock here because it was already decremented during approval.
             $order->update([
@@ -574,6 +583,10 @@ class OrderController extends Controller
 
             if ($order->order_status !== Order::ORDER_STATUS_PENDING) {
                 return back()->with('error', 'Pesanan sudah diproses dan tidak bisa ditolak.');
+            }
+
+            if ($order->payment_status === Order::PAYMENT_STATUS_PAID) {
+                return back()->with('error', 'Pesanan yang sudah dibayar tidak bisa dibatalkan lewat aksi tolak biasa.');
             }
 
             $order->update(['order_status' => Order::ORDER_STATUS_CANCELLED]);
@@ -659,7 +672,6 @@ class OrderController extends Controller
         // VALIDATE TRANSITION
         $allowedTransitions = [
             Order::PAYMENT_STATUS_PENDING => [Order::PAYMENT_STATUS_PAID],
-            Order::PAYMENT_STATUS_PAID => [Order::PAYMENT_STATUS_PENDING],
         ];
 
         $currentStatus = $order->payment_status;
@@ -720,18 +732,23 @@ class OrderController extends Controller
             ? Carbon::parse($request->end_date)->endOfDay()
             : now()->endOfMonth();
 
+        $excludedReportStatuses = [Order::ORDER_STATUS_CANCELLED, 'rejected', 'refunded'];
+
         $orders = Order::with(['product', 'variant', 'user'])
             ->whereBetween('created_at', [$start, $end])
+            ->whereNotIn('order_status', $excludedReportStatuses)
             ->get();
 
         $totalOrders = $orders->count();
-        $totalRevenue = $orders->where('payment_status', Order::PAYMENT_STATUS_PAID)->sum('total_price');
+        $revenueOrders = $orders->where('payment_status', Order::PAYMENT_STATUS_PAID);
+        $totalRevenue = $revenueOrders->sum('total_price');
         $activeRentals = $orders->where('order_status', Order::ORDER_STATUS_RENTED)->count();
         $returnedOrders = $orders->where('order_status', Order::ORDER_STATUS_RETURNED)->count();
 
         // Most frequently rented products.
         $topProducts = Order::select('product_id', DB::raw('count(*) as total'))
             ->whereBetween('created_at', [$start, $end])
+            ->whereNotIn('order_status', $excludedReportStatuses)
             ->groupBy('product_id')
             ->orderByDesc('total')
             ->with('product')
@@ -744,6 +761,7 @@ class OrderController extends Controller
             DB::raw('count(*) as total')
         )
             ->whereBetween('created_at', [$start, $end])
+            ->whereNotIn('order_status', $excludedReportStatuses)
             ->groupBy('month')
             ->orderBy('month')
             ->get();
