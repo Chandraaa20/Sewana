@@ -16,6 +16,8 @@ class Order extends Model
     public const ORDER_STATUS_RENTED = 'rented';
     public const ORDER_STATUS_RETURNED = 'returned';
     public const ORDER_STATUS_CANCELLED = 'cancelled';
+    public const ORDER_STATUS_REJECTED = 'rejected';
+    public const ORDER_STATUS_REFUNDED = 'refunded';
 
     public const ORDER_STATUSES = [
         self::ORDER_STATUS_PENDING,
@@ -23,6 +25,25 @@ class Order extends Model
         self::ORDER_STATUS_RENTED,
         self::ORDER_STATUS_RETURNED,
         self::ORDER_STATUS_CANCELLED,
+    ];
+
+    public const INVALID_TRANSACTION_STATUSES = [
+        self::ORDER_STATUS_CANCELLED,
+        self::ORDER_STATUS_REJECTED,
+        self::ORDER_STATUS_REFUNDED,
+    ];
+
+    public const ACTIVE_ORDER_STATUSES = [
+        self::ORDER_STATUS_PENDING,
+        self::ORDER_STATUS_APPROVED,
+        self::ORDER_STATUS_RENTED,
+    ];
+
+    public const CLOSED_ORDER_STATUSES = [
+        self::ORDER_STATUS_RETURNED,
+        self::ORDER_STATUS_CANCELLED,
+        self::ORDER_STATUS_REJECTED,
+        self::ORDER_STATUS_REFUNDED,
     ];
 
     public const PAYMENT_STATUS_PENDING = 'pending';
@@ -128,6 +149,33 @@ class Order extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+
+    public function scopeValidTransaction($query)
+    {
+        return $query->whereNotIn('order_status', self::INVALID_TRANSACTION_STATUSES);
+    }
+
+    public function scopeRevenueEligible($query)
+    {
+        return $query
+            ->validTransaction()
+            ->where('payment_status', self::PAYMENT_STATUS_PAID);
+    }
+
+    public function scopeActiveRental($query)
+    {
+        return $query->whereIn('order_status', self::ACTIVE_ORDER_STATUSES);
+    }
+
+    public function scopeClosed($query)
+    {
+        return $query->whereIn('order_status', self::CLOSED_ORDER_STATUSES);
+    }
+
+    public function scopeFulfilled($query)
+    {
+        return $query->where('order_status', self::ORDER_STATUS_RETURNED);
     }
 
     public function identityPhotoUrl(): ?string

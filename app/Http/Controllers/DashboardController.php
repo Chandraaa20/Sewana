@@ -26,13 +26,14 @@ class DashboardController extends Controller
                 'products'  => Product::count(),
                 'variants'  => ProductVariant::count(),
                 'users'     => User::count(),
-                'orders'    => Order::count(),
+                'orders'    => Order::validTransaction()->count(),
                 'pemilik'   => User::role('pemilik')->count(),
                 'pegawai'   => User::role('pegawai')->count(),
                 'penyewa'   => User::role('penyewa')->count(),
             ];
 
             $latestOrders = Order::with(['user', 'product'])
+                ->validTransaction()
                 ->latest()
                 ->take(5)
                 ->get();
@@ -43,18 +44,11 @@ class DashboardController extends Controller
         // ================= PEGAWAI =================
         if ($user->hasRole('pegawai')) {
             $data = [
-                'orders' => Order::count(),
+                'orders' => Order::validTransaction()->count(),
 
-                'active_orders' => Order::whereIn('order_status', [
-                    Order::ORDER_STATUS_PENDING,
-                    Order::ORDER_STATUS_APPROVED,
-                    Order::ORDER_STATUS_RENTED,
-                ])->count(),
+                'active_orders' => Order::activeRental()->count(),
 
-                'closed_orders' => Order::whereIn('order_status', [
-                    Order::ORDER_STATUS_RETURNED,
-                    Order::ORDER_STATUS_CANCELLED,
-                ])->count(),
+                'closed_orders' => Order::closed()->count(),
 
                 'products' => Product::count(),
                 'active_products' => Product::where('status', 'active')->count(),
@@ -63,11 +57,7 @@ class DashboardController extends Controller
             ];
 
             $orders = Order::with(['user', 'product'])
-                ->whereIn('order_status', [
-                    Order::ORDER_STATUS_PENDING,
-                    Order::ORDER_STATUS_APPROVED,
-                    Order::ORDER_STATUS_RENTED,
-                ])
+                ->activeRental()
                 ->latest()
                 ->take(10)
                 ->get();
@@ -80,20 +70,9 @@ class DashboardController extends Controller
             $customerData = [
                 'total_orders' => $user->orders()->count(),
 
-                'active_orders' => $user->orders()
-                    ->whereIn('order_status', [
-                        Order::ORDER_STATUS_PENDING,
-                        Order::ORDER_STATUS_APPROVED,
-                        Order::ORDER_STATUS_RENTED,
-                    ])
-                    ->count(),
+                'active_orders' => $user->orders()->activeRental()->count(),
 
-                'closed_orders' => $user->orders()
-                    ->whereIn('order_status', [
-                        Order::ORDER_STATUS_RETURNED,
-                        Order::ORDER_STATUS_CANCELLED,
-                    ])
-                    ->count(),
+                'closed_orders' => $user->orders()->closed()->count(),
 
                 'popular_products' => Product::with(['images', 'variants'])
                     ->where('status', 'active')
@@ -101,8 +80,8 @@ class DashboardController extends Controller
                         $q->where('stock', '>', 0)
                             ->where('status', 'tersedia');
                     })
-                    ->withCount('orders')
-                    ->orderByDesc('orders_count')
+                    ->withCount(['orders as valid_orders_count' => fn($query) => $query->validTransaction()])
+                    ->orderByDesc('valid_orders_count')
                     ->limit(8)
                     ->get(),
             ];

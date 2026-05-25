@@ -23,7 +23,7 @@ class LandingController extends Controller
         return view('landing', [
             'products' => $products,
             'productCount' => Product::count(),
-            'orderCount' => Order::count(),
+            'orderCount' => Order::validTransaction()->count(),
             'userCount' => User::count(),
         ]);
     }

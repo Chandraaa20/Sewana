@@ -736,23 +736,23 @@ class OrderController extends Controller
             ? Carbon::parse($request->end_date)->endOfDay()
             : now()->endOfMonth();
 
-        $excludedReportStatuses = [Order::ORDER_STATUS_CANCELLED, 'rejected', 'refunded'];
-
         $orders = Order::with(['product', 'variant', 'user'])
             ->whereBetween('created_at', [$start, $end])
-            ->whereNotIn('order_status', $excludedReportStatuses)
+            ->validTransaction()
             ->get();
 
         $totalOrders = $orders->count();
-        $revenueOrders = $orders->where('payment_status', Order::PAYMENT_STATUS_PAID);
-        $totalRevenue = $revenueOrders->sum('total_price');
-        $activeRentals = $orders->where('order_status', Order::ORDER_STATUS_RENTED)->count();
+        $totalRevenue = Order::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->revenueEligible()
+            ->sum('total_price');
+        $activeRentals = $orders->whereIn('order_status', Order::ACTIVE_ORDER_STATUSES)->count();
         $returnedOrders = $orders->where('order_status', Order::ORDER_STATUS_RETURNED)->count();
 
         // Most frequently rented products.
         $topProducts = Order::select('product_id', DB::raw('count(*) as total'))
             ->whereBetween('created_at', [$start, $end])
-            ->whereNotIn('order_status', $excludedReportStatuses)
+            ->validTransaction()
             ->groupBy('product_id')
             ->orderByDesc('total')
             ->with('product')
@@ -765,7 +765,7 @@ class OrderController extends Controller
             DB::raw('count(*) as total')
         )
             ->whereBetween('created_at', [$start, $end])
-            ->whereNotIn('order_status', $excludedReportStatuses)
+            ->validTransaction()
             ->groupBy('month')
             ->orderBy('month')
             ->get();
