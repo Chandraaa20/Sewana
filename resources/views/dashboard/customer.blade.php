@@ -75,6 +75,10 @@
                     @php
                         $productIndex = $loop->index;
                         $availableImages = $product->availableImages();
+                        $rentableVariants = $product->variants
+                            ->where('stock', '>', 0)
+                            ->where('status', 'tersedia')
+                            ->values();
                     @endphp
                     <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
                         <div class="card shadow-sm h-100 product-card d-flex flex-column border-0 rounded-4 overflow-hidden">
@@ -118,7 +122,7 @@
                                 <h6 class="product-card__title">{{ $product->name }}</h6>
                                 <p class="text-muted small mb-2 text-truncate-2">{{ $product->description }}</p>
                                 <span class="status-badge {{ $product->availabilityBadgeClass() }}">
-                                    {{ $product->availabilityLabel() }}
+                                    {{ $rentableVariants->isNotEmpty() ? 'Tersedia' : 'Stok belum tersedia' }}
                                 </span>
                             </div>
 
@@ -165,12 +169,12 @@
                                         </tr>
                                         <tr>
                                             <th>Status</th>
-                                            <td>{{ $product->availabilityLabel() }}</td>
+                                            <td>{{ $rentableVariants->isNotEmpty() ? 'Tersedia' : 'Stok belum tersedia' }}</td>
                                         </tr>
                                     </table>
 
                                     <h6 class="fw-bold mt-3">Varian:</h6>
-                                    @if ($product->variants->count())
+                                    @if ($rentableVariants->isNotEmpty())
                                         <table class="table table-sm table-striped text-center">
                                             <thead class="table-light">
                                                 <tr>
@@ -182,19 +186,19 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach ($product->variants as $variant)
+                                                @foreach ($rentableVariants as $variant)
                                                     <tr>
                                                         <td>{{ $variant->size }}</td>
                                                         <td>{{ $variant->color }}</td>
                                                         <td>Rp{{ number_format($variant->price, 0, ',', '.') }}</td>
                                                         <td>{{ $variant->stock }}</td>
-                                                        <td>{{ $variant->availabilityLabel() }}</td>
+                                                        <td>Tersedia</td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>
                                         </table>
                                     @else
-                                        <p class="text-muted fst-italic">Tidak ada varian</p>
+                                        <p class="text-muted fst-italic">Stok belum tersedia</p>
                                     @endif
                                 </div>
                                 <div class="modal-footer">

@@ -59,22 +59,22 @@
                             capture="environment" required>
                         <small class="text-muted">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label admin-form-label">Bukti Pembayaran</label>
-                        <input type="file" name="bukti" class="form-control" accept="image/*" capture="environment">
-                        <small class="text-muted">Opsional. Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
-                    </div>
                     {{-- Product --}}
                     <div class="col-md-6">
                         <label class="form-label admin-form-label">Pilih Produk</label>
                         <select name="product_id" id="product_id" class="form-select" required>
                             <option value="">-- Pilih Produk --</option>
-                            @foreach ($products as $p)
+                            @forelse ($products as $p)
                                 <option value="{{ $p->id }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>
                                     {{ $p->name }} ({{ $p->sku ?? '-' }})
                                 </option>
-                            @endforeach
+                            @empty
+                                <option value="" disabled>Tidak ada produk yang dapat disewa</option>
+                            @endforelse
                         </select>
+                        @if ($products->isEmpty())
+                            <small class="text-danger">Tidak ada produk aktif dengan varian tersedia.</small>
+                        @endif
                     </div>
 
                     {{-- Variant --}}
@@ -138,8 +138,8 @@
                             <option value="cash" {{ old('payment_method', 'cash') === 'cash' ? 'selected' : '' }}>
                                 Tunai
                             </option>
-                            <option value="qris_dummy" {{ old('payment_method') === 'qris_dummy' ? 'selected' : '' }}>
-                                QRIS Dummy
+                            <option value="qris" {{ old('payment_method') === 'qris' ? 'selected' : '' }}>
+                                QRIS
                             </option>
                         </select>
 
@@ -148,7 +148,7 @@
                         @enderror
 
                         <small class="text-muted">
-                            Pilih Tunai untuk pembayaran langsung, atau QRIS Dummy untuk simulasi pembayaran QR.
+                            Pilih Tunai untuk pembayaran langsung, atau QRIS untuk alur pembayaran gateway.
                         </small>
                     </div>
 
@@ -178,7 +178,8 @@
                     {{-- Submit --}}
                     <div class="col-12">
                         <div class="admin-form-actions">
-                            <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4">
+                            <button type="submit" id="offline_submit" class="btn btn-dark rounded-pill px-4"
+                                {{ $products->isEmpty() ? 'disabled' : '' }}>
                                 <i class="bi bi-save me-1"></i> Simpan Pesanan Offline
                             </button>
                         </div>
@@ -193,6 +194,7 @@
             $productVariantsMap = $products->mapWithKeys(function ($p) {
                 return [
                     (string) $p->id => $p->variants
+                        ->filter(fn($v) => $v->stock > 0 && $v->status === 'tersedia')
                         ->map(function ($v) {
                             return [
                                 'id' => $v->id,
@@ -312,6 +314,16 @@
                 updateEstimate();
             }
 
+            function unavailableReason(variant) {
+                if (Number(variant.stock) <= 0) return 'Stok habis';
+
+                if (variant.status === 'disewa') return 'Sedang disewa';
+                if (variant.status === 'rusak') return 'Rusak';
+                if (variant.status === 'hilang') return 'Hilang';
+
+                return 'Status tidak tersedia';
+            }
+
             function loadVariants(productId) {
                 variantSelect.innerHTML = '';
                 helpEl.textContent = '';
@@ -344,7 +356,7 @@
 
                     opt.value = v.id;
                     opt.textContent = v.label + ' | ' + formatRupiah(v.price) + ' | ' + (isRentable ? 'Stok: ' + v
-                        .stock : 'Tidak tersedia') + ' | ' + v.status;
+                        .stock : unavailableReason(v)) + ' | ' + v.status;
                     opt.disabled = !isRentable;
 
                     opt.dataset.price = v.price;
@@ -362,7 +374,7 @@
                     return;
                 }
 
-                helpEl.textContent = 'Varian dengan stok habis, disewa, rusak, atau hilang tidak dapat dipilih.';
+                helpEl.textContent = 'Hanya varian dengan stok tersedia dan status tersedia yang ditampilkan.';
             }
 
             productSelect.addEventListener('change', function() {

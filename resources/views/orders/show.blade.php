@@ -65,13 +65,14 @@
             };
             $paymentIcon = $order->payment_status === 'paid' ? 'check-circle' : 'x-circle';
             $isOnlineOrder = $order->source === 'online';
-            $isOfflineQrisOrder = $order->source === 'offline' && $order->payment_method === 'qris_dummy';
+            $isOfflineQrisOrder = $order->source === 'offline' && $order->payment_method === 'qris';
+            $isOfflineCashOrder = $order->source === 'offline' && $order->payment_method === 'cash';
 
             $canApproveOrder =
                 $status === 'pending' &&
                 ((!$isOnlineOrder && !$isOfflineQrisOrder) || $order->payment_status === 'paid');
             $paymentApprovalInfo = match ($order->payment_status) {
-                'pending' => 'Menunggu pembayaran penyewa',
+                'pending' => $isOfflineQrisOrder ? 'Menunggu proses pembayaran' : 'Menunggu pembayaran penyewa',
                 'failed' => 'Pembayaran penyewa gagal',
                 'expired' => 'Pembayaran penyewa kedaluwarsa',
                 default => 'Status pembayaran belum valid',
@@ -307,7 +308,7 @@
                         @elseif (($isOnlineOrder || $isOfflineQrisOrder) && ($order->payment_reference || $order->paid_at))
                             <div class="bg-light rounded-4 p-3 border border-dashed">
                                 <p class="text-muted small mb-3">
-                                    Pembayaran online diverifikasi melalui payment gateway/dummy payment.
+                                    Pembayaran diverifikasi melalui sistem QRIS/payment gateway.
                                 </p>
                                 <div class="d-flex justify-content-between gap-3 small mb-2">
                                     <span class="text-muted">Reference</span>
@@ -320,6 +321,12 @@
                                         {{ $order->paid_at?->format('d M Y, H:i') ?? '-' }}
                                     </span>
                                 </div>
+                            </div>
+                        @elseif ($isOfflineCashOrder)
+                            <div class="bg-light rounded-4 p-3 border border-dashed">
+                                <p class="text-muted small mb-0">
+                                    Pembayaran tunai diproses langsung oleh pegawai.
+                                </p>
                             </div>
                         @else
                             <div class="text-center py-4 text-muted bg-light rounded-4 border border-dashed">
@@ -383,7 +390,7 @@
                             </h6>
 
                             <div class="bg-light p-3 rounded-4 mb-3">
-                                @if ($order->source === 'offline' && $order->payment_method === 'qris_dummy')
+                                @if ($isOfflineQrisOrder)
                                     <a href="{{ route('pegawai.orders.offline-qris.show', $order) }}"
                                         class="btn btn-outline-dark w-100 rounded-pill fw-semibold mb-3">
                                         <i class="bi bi-qr-code me-1"></i> Buka Pembayaran QRIS
@@ -400,6 +407,15 @@
                                                 class="flex-grow-1">
                                                 @csrf
                                                 @method('PATCH')
+                                                @if ($isOfflineQrisOrder)
+                                                    <div class="alert alert-success rounded-4 small mb-3">
+                                                        Pembayaran QRIS sudah terkonfirmasi oleh sistem.
+                                                    </div>
+                                                @elseif ($isOfflineCashOrder)
+                                                    <div class="alert alert-info rounded-4 small mb-3">
+                                                        Pembayaran tunai diproses langsung oleh pegawai.
+                                                    </div>
+                                                @endif
                                                 <button class="btn btn-success w-100 rounded-pill fw-semibold shadow-sm">
                                                     <i class="bi bi-check-lg me-1"></i> Setujui Pesanan
                                                 </button>

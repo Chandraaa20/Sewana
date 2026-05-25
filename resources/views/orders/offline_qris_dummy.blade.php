@@ -5,9 +5,9 @@
         <div class="admin-page-header">
             <div>
                 <span class="admin-page-eyebrow">Pembayaran Offline</span>
-                <h1 class="admin-page-title">QRIS Dummy</h1>
+                <h1 class="admin-page-title">QRIS</h1>
                 <p class="admin-page-subtitle">
-                    Simulasi pembayaran QR untuk pesanan offline sebelum integrasi payment gateway asli.
+                    Simulasi pembayaran QRIS untuk pesanan offline melalui alur gateway.
                 </p>
             </div>
 
@@ -22,7 +22,7 @@
                 <div class="admin-card h-100">
                     <div class="admin-card-header">
                         <span class="admin-page-eyebrow">Scan Pembayaran</span>
-                        <h5 class="fw-bold text-dark mb-0 mt-1">QRIS Dummy</h5>
+                        <h5 class="fw-bold text-dark mb-0 mt-1">QRIS</h5>
                     </div>
 
                     <div class="admin-card-body text-center">
@@ -31,11 +31,11 @@
                         </div>
 
                         <p class="text-muted small mt-3 mb-0">
-                            QR ini masih dummy. Nanti bisa diganti QRIS asli dari Midtrans.
+                            QR ini digunakan untuk simulasi pembayaran QRIS pada mode pengujian.
                         </p>
 
                         <a href="{{ $paymentUrl }}" target="_blank" rel="noopener" class="small text-decoration-none">
-                            Buka URL pembayaran dummy
+                            Buka URL pembayaran QRIS
                         </a>
                     </div>
                 </div>

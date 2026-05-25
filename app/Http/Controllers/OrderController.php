@@ -91,6 +91,10 @@ class OrderController extends Controller
 
         $product = Product::with(['variants', 'images'])
             ->where('status', 'active')
+            ->whereHas('variants', function ($query) {
+                $query->where('stock', '>', 0)
+                    ->where('status', 'tersedia');
+            })
             ->findOrFail($request->product_id);
 
         return view('orders.create', compact('product'));
@@ -201,6 +205,10 @@ class OrderController extends Controller
     {
         $products = Product::with(['variants', 'images'])
             ->where('status', 'active')
+            ->whereHas('variants', function ($query) {
+                $query->where('stock', '>', 0)
+                    ->where('status', 'tersedia');
+            })
             ->get();
 
         return view('orders.create_offline', compact('products'));
@@ -218,7 +226,6 @@ class OrderController extends Controller
         $request->validate([
             'customer_name' => 'required|string|max:255',
             'identity_photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
-            'bukti' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
             'product_id' => [
                 'required',
                 Rule::exists('products', 'id')->where(fn($query) => $query->where('status', 'active')),
@@ -234,7 +241,7 @@ class OrderController extends Controller
             'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'address' => 'required|string|max:255',
-            'payment_method' => 'required|in:cash,qris_dummy',
+            'payment_method' => 'required|in:cash,qris',
             'nominal_diterima' => 'required_if:payment_method,cash|nullable|numeric|min:0',
         ], [
             'customer_name.required' => 'Nama pelanggan wajib diisi.',
@@ -242,9 +249,6 @@ class OrderController extends Controller
             'identity_photo.image' => 'Foto identitas harus berupa gambar.',
             'identity_photo.mimes' => 'Foto identitas harus berformat JPG, JPEG, PNG, atau WEBP.',
             'identity_photo.max' => 'Ukuran foto identitas maksimal 10 MB.',
-            'bukti.image' => 'Bukti pembayaran harus berupa gambar.',
-            'bukti.mimes' => 'Bukti pembayaran harus berformat JPG, JPEG, PNG, atau WEBP.',
-            'bukti.max' => 'Ukuran bukti pembayaran maksimal 10 MB.',
             'product_id.required' => 'Produk wajib dipilih.',
             'product_id.exists' => 'Produk yang dipilih tidak valid atau sedang tidak aktif.',
             'variant_id.required' => 'Varian wajib dipilih.',
@@ -318,16 +322,10 @@ class OrderController extends Controller
 
             $photoPath = $request->file('identity_photo')->store('identity_photos', 'public');
 
-            $paymentProofPath = null;
-            if ($request->hasFile('bukti')) {
-                $paymentProofPath = $request->file('bukti')->store('bukti', 'public');
-            }
-
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'customer_name' => $request->customer_name,
                 'identity_photo' => $photoPath,
-                'bukti_pembayaran' => $paymentProofPath,
                 'source' => 'offline',
                 'product_id' => $request->product_id,
                 'variant_id' => $request->variant_id,
@@ -341,7 +339,7 @@ class OrderController extends Controller
                 'order_status' => $paymentMethod === 'cash' ? 'rented' : 'pending',
                 'payment_method' => $paymentMethod,
                 'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
-                'payment_gateway' => $paymentMethod === 'qris_dummy' ? 'dummy' : null,
+                'payment_gateway' => $paymentMethod === 'qris' ? 'dummy' : null,
                 'paid_at' => $paymentMethod === 'cash' ? now() : null,
                 'address' => $request->address,
             ]);
@@ -349,17 +347,17 @@ class OrderController extends Controller
                 $variant->decrement('stock', 1);
             }
 
-            if ($paymentMethod === 'qris_dummy') {
+            if ($paymentMethod === 'qris') {
                 $order->update([
-                    'payment_reference' => sprintf('OFFLINE-DUMMY-%s-%s', $order->id, now()->timestamp),
+                    'payment_reference' => sprintf('QRIS-DUMMY-%s-%s', $order->id, now()->timestamp),
                 ]);
             }
 
             return $order;
         });
-        if ($order->payment_method === 'qris_dummy') {
+        if ($order->payment_method === 'qris') {
             return redirect()->route('pegawai.orders.offline-qris.show', $order)
-                ->with('success', 'Pesanan offline QRIS Dummy berhasil dibuat dan menunggu pembayaran.');
+                ->with('success', 'Pesanan offline QRIS berhasil dibuat dan menunggu pembayaran.');
         }
         return redirect()->route('pegawai.orders.index')
             ->with('success', 'Pesanan offline tunai berhasil ditambahkan.');
@@ -370,7 +368,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        if ($order->source !== 'offline' || $order->payment_method !== 'qris_dummy') {
+        if ($order->source !== 'offline' || $order->payment_method !== 'qris') {
             abort(404);
         }
 
@@ -392,7 +390,7 @@ class OrderController extends Controller
             abort(404);
         }
 
-        if ($order->source !== 'offline' || $order->payment_method !== 'qris_dummy') {
+        if ($order->source !== 'offline' || $order->payment_method !== 'qris') {
             abort(404);
         }
 
@@ -404,6 +402,7 @@ class OrderController extends Controller
         $order->update([
             'payment_status' => 'paid',
             'paid_at' => now(),
+            'payment_reference' => $order->payment_reference ?: sprintf('QRIS-DUMMY-%s-%s', $order->id, now()->timestamp),
             'payment_payload' => [
                 'provider' => 'dummy',
                 'type' => 'offline_qris',
@@ -414,20 +413,12 @@ class OrderController extends Controller
         ]);
 
         return redirect()->route('pegawai.orders.offline-qris.show', $order)
-            ->with('success', 'Simulasi pembayaran QRIS berhasil. Pesanan sudah berstatus dibayar.');
+            ->with('success', 'Pembayaran QRIS berhasil dikonfirmasi oleh sistem.');
     }
     /** Approve an order and decrement stock. */
     public function approve(Request $request, $id)
     {
-        $request->validate([
-            'bukti' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
-        ], [
-            'bukti.image' => 'Bukti transaksi harus berupa gambar.',
-            'bukti.mimes' => 'Bukti transaksi harus berformat JPG, JPEG, PNG, atau WEBP.',
-            'bukti.max' => 'Ukuran bukti transaksi maksimal 10 MB.',
-        ]);
-
-        return DB::transaction(function () use ($request, $id) {
+        return DB::transaction(function () use ($id) {
             $order = Order::lockForUpdate()->findOrFail($id);
 
             if ($order->order_status !== 'pending') {
@@ -435,7 +426,7 @@ class OrderController extends Controller
             }
 
             $requiresPaidBeforeApproval = $order->source === 'online'
-                || ($order->source === 'offline' && $order->payment_method === 'qris_dummy');
+                || ($order->source === 'offline' && $order->payment_method === 'qris');
 
             if ($requiresPaidBeforeApproval && $order->payment_status !== 'paid') {
                 $message = match ($order->payment_status) {
@@ -468,11 +459,6 @@ class OrderController extends Controller
 
             if (! $variant->product || $variant->product->status !== 'active') {
                 return back()->with('error', 'Gagal menyetujui: produk sedang tidak aktif.');
-            }
-
-            if ($request->hasFile('bukti') && $order->source !== 'online') {
-                $path = $request->file('bukti')->store('bukti', 'public');
-                $order->bukti_pembayaran = $path;
             }
 
             // Decrement stock because the item has been reserved or paid.

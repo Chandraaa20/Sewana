@@ -10,6 +10,10 @@
             ->where('stock', '>', 0)
             ->where('status', 'tersedia')
             ->count();
+        $rentableVariants = $product->variants
+            ->where('stock', '>', 0)
+            ->where('status', 'tersedia')
+            ->values();
         $oldStartDate = old('start_date');
         $minimumEndDate = $oldStartDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $oldStartDate) && $oldStartDate >= $today
             ? $oldStartDate
@@ -87,7 +91,7 @@
                         <h2 class="h4 fw-bold text-dark">{{ $product->name }}</h2>
                         <p class="text-muted mb-3">{{ $product->description }}</p>
                         <span class="badge {{ $product->availabilityBadgeClass() }} mb-3">
-                            {{ $product->availabilityLabel() }}
+                            {{ $availableVariantCount > 0 ? 'Tersedia' : 'Stok belum tersedia' }}
                         </span>
 
                         {{-- Form mulai di sini --}}
@@ -119,20 +123,19 @@
                                 <select name="variant_id" id="variant-id" class="form-select" required
                                     {{ $availableVariantCount === 0 ? 'disabled' : '' }}>
                                     <option value="">-- Pilih Varian --</option>
-                                    @foreach ($product->variants as $variant)
+                                    @foreach ($rentableVariants as $variant)
                                         <option value="{{ $variant->id }}" data-price="{{ $variant->price }}"
-                                            {{ old('variant_id') == $variant->id ? 'selected' : '' }}
-                                            {{ $variant->stock <= 0 || $variant->status !== 'tersedia' ? 'disabled' : '' }}>
+                                            {{ old('variant_id') == $variant->id ? 'selected' : '' }}>
                                             {{ $variant->size }} - {{ $variant->color }} |
                                             Rp{{ number_format($variant->price, 0, ',', '.') }}/hari
-                                            ({{ $variant->stock > 0 && $variant->status === 'tersedia' ? 'Stok: ' . $variant->stock : $variant->availabilityLabel() }})
+                                            (Stok: {{ $variant->stock }})
                                         </option>
                                     @endforeach
                                 </select>
                                 @if ($availableVariantCount === 0)
-                                    <small class="text-danger">Semua varian produk ini sedang tidak tersedia. Silakan pilih produk lain.</small>
+                                    <small class="text-danger">Stok belum tersedia</small>
                                 @else
-                                    <small class="text-muted">Varian dengan stok habis, disewa, rusak, atau hilang tidak dapat dipilih.</small>
+                                    <small class="text-muted">Hanya varian dengan stok tersedia dan status tersedia yang ditampilkan.</small>
                                 @endif
                             </div>
 

@@ -13,6 +13,10 @@ class LandingController extends Controller
     {
         $products = Product::with('images')
             ->where('status', 'active')
+            ->whereHas('variants', function ($query) {
+                $query->where('stock', '>', 0)
+                    ->where('status', 'tersedia');
+            })
             ->take(8)
             ->get();
 
