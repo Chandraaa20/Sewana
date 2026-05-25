@@ -20,7 +20,7 @@
             ],
             [
                 'label' => 'Pesanan Selesai',
-                'value' => $customerData['finished_orders'] ?? 0,
+                'value' => $customerData['closed_orders'] ?? 0,
                 'icon' => 'check2-circle',
                 'description' => 'Sudah dikembalikan atau dibatalkan',
             ],

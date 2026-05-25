@@ -46,14 +46,14 @@ class DashboardController extends Controller
                 'orders' => Order::count(),
 
                 'active_orders' => Order::whereIn('order_status', [
-                    'pending',
-                    'approved',
-                    'rented'
+                    Order::ORDER_STATUS_PENDING,
+                    Order::ORDER_STATUS_APPROVED,
+                    Order::ORDER_STATUS_RENTED,
                 ])->count(),
 
-                'finished_orders' => Order::whereIn('order_status', [
-                    'returned',
-                    'cancelled'
+                'closed_orders' => Order::whereIn('order_status', [
+                    Order::ORDER_STATUS_RETURNED,
+                    Order::ORDER_STATUS_CANCELLED,
                 ])->count(),
 
                 'products' => Product::count(),
@@ -63,7 +63,11 @@ class DashboardController extends Controller
             ];
 
             $orders = Order::with(['user', 'product'])
-                ->whereIn('order_status', ['pending', 'approved', 'rented'])
+                ->whereIn('order_status', [
+                    Order::ORDER_STATUS_PENDING,
+                    Order::ORDER_STATUS_APPROVED,
+                    Order::ORDER_STATUS_RENTED,
+                ])
                 ->latest()
                 ->take(10)
                 ->get();
@@ -77,11 +81,18 @@ class DashboardController extends Controller
                 'total_orders' => $user->orders()->count(),
 
                 'active_orders' => $user->orders()
-                    ->whereIn('order_status', ['pending', 'approved', 'rented'])
+                    ->whereIn('order_status', [
+                        Order::ORDER_STATUS_PENDING,
+                        Order::ORDER_STATUS_APPROVED,
+                        Order::ORDER_STATUS_RENTED,
+                    ])
                     ->count(),
 
-                'finished_orders' => $user->orders()
-                    ->whereIn('order_status', ['returned', 'cancelled'])
+                'closed_orders' => $user->orders()
+                    ->whereIn('order_status', [
+                        Order::ORDER_STATUS_RETURNED,
+                        Order::ORDER_STATUS_CANCELLED,
+                    ])
                     ->count(),
 
                 'popular_products' => Product::with(['images', 'variants'])

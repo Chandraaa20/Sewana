@@ -20,7 +20,7 @@ class PaymentGatewayService
     public function markPaymentPaid(Order $order, array $payload = []): Order
     {
         $order->update([
-            'payment_status' => 'paid',
+            'payment_status' => Order::PAYMENT_STATUS_PAID,
             'paid_at' => now(),
             'payment_payload' => $payload ?: $order->payment_payload,
         ]);
@@ -31,7 +31,7 @@ class PaymentGatewayService
     public function markPaymentFailed(Order $order, array $payload = []): Order
     {
         $order->update([
-            'payment_status' => 'failed',
+            'payment_status' => Order::PAYMENT_STATUS_FAILED,
             'payment_payload' => $payload ?: $order->payment_payload,
         ]);
 
@@ -41,7 +41,7 @@ class PaymentGatewayService
     public function markPaymentExpired(Order $order, array $payload = []): Order
     {
         $order->update([
-            'payment_status' => 'expired',
+            'payment_status' => Order::PAYMENT_STATUS_EXPIRED,
             'payment_payload' => $payload ?: $order->payment_payload,
         ]);
 

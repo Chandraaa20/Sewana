@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 12, 2);
-            $table->string('method')->default('cash'); // cash, transfer, qris
-            $table->string('status')->default('unpaid'); // unpaid, paid, failed
+            $table->string('method')->default('cash'); // cash, qris
+            $table->string('status')->default('pending'); // pending, paid, failed, expired
             $table->string('proof')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();

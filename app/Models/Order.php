@@ -11,6 +11,40 @@ class Order extends Model
 {
     use HasFactory;
 
+    public const ORDER_STATUS_PENDING = 'pending';
+    public const ORDER_STATUS_APPROVED = 'approved';
+    public const ORDER_STATUS_RENTED = 'rented';
+    public const ORDER_STATUS_RETURNED = 'returned';
+    public const ORDER_STATUS_CANCELLED = 'cancelled';
+
+    public const ORDER_STATUSES = [
+        self::ORDER_STATUS_PENDING,
+        self::ORDER_STATUS_APPROVED,
+        self::ORDER_STATUS_RENTED,
+        self::ORDER_STATUS_RETURNED,
+        self::ORDER_STATUS_CANCELLED,
+    ];
+
+    public const PAYMENT_STATUS_PENDING = 'pending';
+    public const PAYMENT_STATUS_PAID = 'paid';
+    public const PAYMENT_STATUS_FAILED = 'failed';
+    public const PAYMENT_STATUS_EXPIRED = 'expired';
+
+    public const PAYMENT_STATUSES = [
+        self::PAYMENT_STATUS_PENDING,
+        self::PAYMENT_STATUS_PAID,
+        self::PAYMENT_STATUS_FAILED,
+        self::PAYMENT_STATUS_EXPIRED,
+    ];
+
+    public const PAYMENT_METHOD_CASH = 'cash';
+    public const PAYMENT_METHOD_QRIS = 'qris';
+
+    public const PAYMENT_METHODS = [
+        self::PAYMENT_METHOD_CASH,
+        self::PAYMENT_METHOD_QRIS,
+    ];
+
     protected $fillable = [
         'user_id',
         'customer_name',

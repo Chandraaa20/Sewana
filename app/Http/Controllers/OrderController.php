@@ -37,7 +37,7 @@ class OrderController extends Controller
         $search = trim((string) $request->input('search', ''));
 
         $orders = Order::with(['user', 'product.images', 'variant'])
-            ->whereNotIn('order_status', ['returned', 'cancelled'])
+            ->whereNotIn('order_status', [Order::ORDER_STATUS_RETURNED, Order::ORDER_STATUS_CANCELLED])
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%"))
@@ -183,8 +183,8 @@ class OrderController extends Controller
                 'rent_days' => $rentDays,
                 'price_per_day' => $variant->price,
                 'total_price' => $totalPrice,
-                'order_status' => 'pending',
-                'payment_status' => 'pending',
+                'order_status' => Order::ORDER_STATUS_PENDING,
+                'payment_status' => Order::PAYMENT_STATUS_PENDING,
                 'address' => $request->address,
             ]);
 
@@ -241,8 +241,8 @@ class OrderController extends Controller
             'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
             'address' => 'required|string|max:255',
-            'payment_method' => 'required|in:cash,qris',
-            'nominal_diterima' => 'required_if:payment_method,cash|nullable|numeric|min:0',
+            'payment_method' => ['required', Rule::in(Order::PAYMENT_METHODS)],
+            'nominal_diterima' => 'required_if:payment_method,' . Order::PAYMENT_METHOD_CASH . '|nullable|numeric|min:0',
         ], [
             'customer_name.required' => 'Nama pelanggan wajib diisi.',
             'identity_photo.required' => 'Foto identitas wajib diunggah.',
@@ -303,12 +303,12 @@ class OrderController extends Controller
 
             $totalPrice = $variant->price * $rentDays;
             $totalAmount = (int) round($totalPrice);
-            $paymentMethod = $request->input('payment_method', 'cash');
+            $paymentMethod = $request->input('payment_method', Order::PAYMENT_METHOD_CASH);
 
             $amountReceived = null;
             $changeAmount = null;
 
-            if ($paymentMethod === 'cash') {
+            if ($paymentMethod === Order::PAYMENT_METHOD_CASH) {
                 $amountReceived = (int) round((float) $request->nominal_diterima);
 
                 if ($amountReceived < $totalAmount) {
@@ -336,18 +336,18 @@ class OrderController extends Controller
                 'total_price' => $totalPrice,
                 'amount_received' => $amountReceived,
                 'change_amount' => $changeAmount,
-                'order_status' => $paymentMethod === 'cash' ? 'rented' : 'pending',
+                'order_status' => $paymentMethod === Order::PAYMENT_METHOD_CASH ? Order::ORDER_STATUS_RENTED : Order::ORDER_STATUS_PENDING,
                 'payment_method' => $paymentMethod,
-                'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
-                'payment_gateway' => $paymentMethod === 'qris' ? 'dummy' : null,
-                'paid_at' => $paymentMethod === 'cash' ? now() : null,
+                'payment_status' => $paymentMethod === Order::PAYMENT_METHOD_CASH ? Order::PAYMENT_STATUS_PAID : Order::PAYMENT_STATUS_PENDING,
+                'payment_gateway' => $paymentMethod === Order::PAYMENT_METHOD_QRIS ? 'dummy' : null,
+                'paid_at' => $paymentMethod === Order::PAYMENT_METHOD_CASH ? now() : null,
                 'address' => $request->address,
             ]);
-            if ($paymentMethod === 'cash') {
+            if ($paymentMethod === Order::PAYMENT_METHOD_CASH) {
                 $variant->decrement('stock', 1);
             }
 
-            if ($paymentMethod === 'qris') {
+            if ($paymentMethod === Order::PAYMENT_METHOD_QRIS) {
                 $order->update([
                     'payment_reference' => sprintf('QRIS-DUMMY-%s-%s', $order->id, now()->timestamp),
                 ]);
@@ -355,7 +355,7 @@ class OrderController extends Controller
 
             return $order;
         });
-        if ($order->payment_method === 'qris') {
+        if ($order->payment_method === Order::PAYMENT_METHOD_QRIS) {
             return redirect()->route('pegawai.orders.offline-qris.show', $order)
                 ->with('success', 'Pesanan offline QRIS berhasil dibuat dan menunggu pembayaran.');
         }
@@ -368,7 +368,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        if ($order->source !== 'offline' || $order->payment_method !== 'qris') {
+        if ($order->source !== 'offline' || $order->payment_method !== Order::PAYMENT_METHOD_QRIS) {
             abort(404);
         }
 
@@ -377,7 +377,7 @@ class OrderController extends Controller
 
         $order->load(['user', 'product', 'variant']);
 
-        return view('orders.offline_qris_dummy', compact('order', 'paymentUrl', 'paymentQrCodeSvg'));
+        return view('orders.offline_qris', compact('order', 'paymentUrl', 'paymentQrCodeSvg'));
     }
 
     public function simulateOfflineQrisSuccess(Order $order)
@@ -390,17 +390,17 @@ class OrderController extends Controller
             abort(404);
         }
 
-        if ($order->source !== 'offline' || $order->payment_method !== 'qris') {
+        if ($order->source !== 'offline' || $order->payment_method !== Order::PAYMENT_METHOD_QRIS) {
             abort(404);
         }
 
-        if ($order->payment_status === 'paid') {
+        if ($order->payment_status === Order::PAYMENT_STATUS_PAID) {
             return redirect()->route('pegawai.orders.offline-qris.show', $order)
                 ->with('warning', 'Pembayaran pesanan ini sudah diterima.');
         }
 
         $order->update([
-            'payment_status' => 'paid',
+            'payment_status' => Order::PAYMENT_STATUS_PAID,
             'paid_at' => now(),
             'payment_reference' => $order->payment_reference ?: sprintf('QRIS-DUMMY-%s-%s', $order->id, now()->timestamp),
             'payment_payload' => [
@@ -421,18 +421,18 @@ class OrderController extends Controller
         return DB::transaction(function () use ($id) {
             $order = Order::lockForUpdate()->findOrFail($id);
 
-            if ($order->order_status !== 'pending') {
+            if ($order->order_status !== Order::ORDER_STATUS_PENDING) {
                 return back()->with('error', 'Pesanan sudah diproses.');
             }
 
             $requiresPaidBeforeApproval = $order->source === 'online'
-                || ($order->source === 'offline' && $order->payment_method === 'qris');
+                || ($order->source === 'offline' && $order->payment_method === Order::PAYMENT_METHOD_QRIS);
 
-            if ($requiresPaidBeforeApproval && $order->payment_status !== 'paid') {
+            if ($requiresPaidBeforeApproval && $order->payment_status !== Order::PAYMENT_STATUS_PAID) {
                 $message = match ($order->payment_status) {
-                    'pending' => 'Menunggu pembayaran penyewa sebelum pesanan dapat disetujui.',
-                    'failed' => 'Pembayaran penyewa gagal. Pesanan tidak dapat disetujui.',
-                    'expired' => 'Pembayaran penyewa kedaluwarsa. Pesanan tidak dapat disetujui.',
+                    Order::PAYMENT_STATUS_PENDING => 'Menunggu pembayaran penyewa sebelum pesanan dapat disetujui.',
+                    Order::PAYMENT_STATUS_FAILED => 'Pembayaran penyewa gagal. Pesanan tidak dapat disetujui.',
+                    Order::PAYMENT_STATUS_EXPIRED => 'Pembayaran penyewa kedaluwarsa. Pesanan tidak dapat disetujui.',
                     default => 'Status pembayaran belum valid untuk menyetujui pesanan.',
                 };
 
@@ -465,8 +465,8 @@ class OrderController extends Controller
             $variant->decrement('stock', 1);
 
             $order->update([
-                'order_status' => 'approved',
-                'payment_status' => 'paid',
+                'order_status' => Order::ORDER_STATUS_APPROVED,
+                'payment_status' => Order::PAYMENT_STATUS_PAID,
             ]);
 
             return back()->with('success', 'Pesanan disetujui dan stok telah dikurangi.');
@@ -477,21 +477,21 @@ class OrderController extends Controller
     public function handover(Request $request, $id)
     {
         $request->validate([
-            'payment_status' => 'nullable|in:paid,pending',
+            'payment_status' => ['nullable', Rule::in([Order::PAYMENT_STATUS_PAID, Order::PAYMENT_STATUS_PENDING])],
         ]);
 
         $response = DB::transaction(function () use ($request, $id) {
             $order = Order::lockForUpdate()->findOrFail($id);
 
-            if ($order->order_status !== 'approved') {
+            if ($order->order_status !== Order::ORDER_STATUS_APPROVED) {
                 return back()->with('error', 'Pesanan harus berstatus disetujui sebelum diserahkan. Stok tidak diubah.');
             }
 
-            $payment = $request->input('payment_status', 'pending');
+            $payment = $request->input('payment_status', Order::PAYMENT_STATUS_PENDING);
 
             // Do not decrement stock here because it was already decremented during approval.
             $order->update([
-                'order_status' => 'rented',
+                'order_status' => Order::ORDER_STATUS_RENTED,
                 'payment_status' => $payment,
             ]);
         });
@@ -509,7 +509,7 @@ class OrderController extends Controller
         return DB::transaction(function () use ($id) {
             $order = Order::lockForUpdate()->findOrFail($id);
 
-            if ($order->order_status !== 'rented') {
+            if ($order->order_status !== Order::ORDER_STATUS_RENTED) {
                 return back()->with('error', 'Hanya pesanan yang sedang disewa yang bisa dikembalikan. Stok tidak diubah.');
             }
 
@@ -520,7 +520,7 @@ class OrderController extends Controller
                 $variant->increment('stock', 1);
             }
 
-            $order->update(['order_status' => 'returned']);
+            $order->update(['order_status' => Order::ORDER_STATUS_RETURNED]);
 
             return back()->with('success', 'Barang berhasil dikembalikan. Stok telah bertambah.');
         });
@@ -532,11 +532,11 @@ class OrderController extends Controller
         return DB::transaction(function () use ($id) {
             $order = Order::lockForUpdate()->findOrFail($id);
 
-            if ($order->order_status !== 'pending') {
+            if ($order->order_status !== Order::ORDER_STATUS_PENDING) {
                 return back()->with('error', 'Pesanan sudah diproses dan tidak bisa dibatalkan.');
             }
 
-            $order->update(['order_status' => 'cancelled']);
+            $order->update(['order_status' => Order::ORDER_STATUS_CANCELLED]);
 
             return back()->with('success', 'Pesanan berhasil dibatalkan.');
         });
@@ -548,11 +548,11 @@ class OrderController extends Controller
         return DB::transaction(function () use ($id) {
             $order = Order::lockForUpdate()->findOrFail($id);
 
-            if ($order->order_status !== 'pending') {
+            if ($order->order_status !== Order::ORDER_STATUS_PENDING) {
                 return back()->with('error', 'Pesanan sudah diproses dan tidak bisa ditolak.');
             }
 
-            $order->update(['order_status' => 'cancelled']);
+            $order->update(['order_status' => Order::ORDER_STATUS_CANCELLED]);
 
             return back()->with('success', 'Pesanan berhasil ditolak dan dibatalkan.');
         });
@@ -598,7 +598,7 @@ class OrderController extends Controller
     public function updatePaymentStatus(Request $request, $id)
     {
         $request->validate([
-            'payment_status' => 'required|in:paid,pending',
+            'payment_status' => ['required', Rule::in([Order::PAYMENT_STATUS_PAID, Order::PAYMENT_STATUS_PENDING])],
         ]);
 
         // ADD AUTHORIZATION CHECK
@@ -608,14 +608,14 @@ class OrderController extends Controller
 
         $order = Order::findOrFail($id);
 
-        if (! in_array($order->order_status, ['approved', 'rented'])) {
+        if (! in_array($order->order_status, [Order::ORDER_STATUS_APPROVED, Order::ORDER_STATUS_RENTED])) {
             return back()->with('error', 'Status pesanan tidak valid untuk memperbarui pembayaran.');
         }
 
         // VALIDATE TRANSITION
         $allowedTransitions = [
-            'pending' => ['paid'],
-            'paid' => ['pending'],
+            Order::PAYMENT_STATUS_PENDING => [Order::PAYMENT_STATUS_PAID],
+            Order::PAYMENT_STATUS_PAID => [Order::PAYMENT_STATUS_PENDING],
         ];
 
         $currentStatus = $order->payment_status;
@@ -648,7 +648,7 @@ class OrderController extends Controller
         // Prevent IDOR by ensuring customers can only delete their own orders.
         $order = Order::where('user_id', Auth::id())->findOrFail($id);
 
-        if (! in_array($order->order_status, ['pending', 'cancelled'])) {
+        if (! in_array($order->order_status, [Order::ORDER_STATUS_PENDING, Order::ORDER_STATUS_CANCELLED])) {
             return back()->with('error', 'Pesanan tidak bisa dihapus karena sudah diproses oleh staf.');
         }
         if ($order->identity_photo) {
@@ -681,9 +681,9 @@ class OrderController extends Controller
             ->get();
 
         $totalOrders = $orders->count();
-        $totalRevenue = $orders->where('payment_status', 'paid')->sum('total_price');
-        $activeRentals = $orders->where('order_status', 'rented')->count();
-        $returnedOrders = $orders->where('order_status', 'returned')->count();
+        $totalRevenue = $orders->where('payment_status', Order::PAYMENT_STATUS_PAID)->sum('total_price');
+        $activeRentals = $orders->where('order_status', Order::ORDER_STATUS_RENTED)->count();
+        $returnedOrders = $orders->where('order_status', Order::ORDER_STATUS_RETURNED)->count();
 
         // Most frequently rented products.
         $topProducts = Order::select('product_id', DB::raw('count(*) as total'))

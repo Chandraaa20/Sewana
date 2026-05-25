@@ -84,16 +84,13 @@
                                                 'approved' => 'primary',
                                                 'rented' => 'info',
                                                 'returned' => 'success',
-                                                'cancelled', 'rejected' => 'danger',
-                                                'finished' => 'secondary',
+                                                'cancelled' => 'danger',
                                                 default => 'secondary',
                                             };
                                             $paymentClass = $order->payment_status === 'paid' ? 'success' : 'danger';
                                             $statusLabel = match ($order->order_status) {
                                                 'pending' => 'Menunggu',
                                                 'approved' => 'Disetujui',
-                                                'rejected' => 'Ditolak',
-                                                'finished' => 'Selesai',
                                                 'rented' => 'Sedang Disewa',
                                                 'returned' => 'Dikembalikan',
                                                 'cancelled' => 'Dibatalkan',

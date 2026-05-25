@@ -32,10 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::table('orders')
-            ->where('payment_status', 'pending')
-            ->update(['payment_status' => 'unpaid']);
-
         Schema::table('orders', function (Blueprint $table) {
             $table->dropUnique(['validation_token']);
             $table->dropColumn([
@@ -46,7 +42,7 @@ return new class extends Migration
                 'validation_token',
                 'paid_at',
             ]);
-            $table->string('payment_status')->default('unpaid')->change();
+            $table->string('payment_status')->default('pending')->change();
         });
     }
 };

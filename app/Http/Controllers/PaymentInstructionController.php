@@ -28,7 +28,7 @@ class PaymentInstructionController extends Controller
             ->where('source', 'online')
             ->findOrFail($id);
 
-        if ($order->payment_status !== 'paid') {
+        if ($order->payment_status !== Order::PAYMENT_STATUS_PAID) {
             $paymentGateway->markPaymentPaid($order, [
                 'type' => 'dummy_payment_simulation',
                 'status' => 'success',

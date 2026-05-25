@@ -33,7 +33,7 @@ return new class extends Migration
 
             // Use strings to avoid data truncation errors.
             $table->string('order_status')->default('pending'); // pending, approved, rented, returned, cancelled
-            $table->string('payment_status')->default('unpaid'); // unpaid, paid, refunded
+            $table->string('payment_status')->default('pending'); // pending, paid, failed, expired
 
             $table->timestamps();
         });

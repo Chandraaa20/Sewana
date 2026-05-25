@@ -15,7 +15,7 @@
             ],
             [
                 'label' => 'Pesanan Selesai',
-                'value' => $data['finished_orders'] ?? 0,
+                'value' => $data['closed_orders'] ?? 0,
                 'icon' => 'check2-circle',
                 'tone' => 'success',
                 'description' => 'Dikembalikan dan dibatalkan',
