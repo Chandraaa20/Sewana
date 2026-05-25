@@ -16,16 +16,41 @@ class ProductImage extends Model
 
     public function publicUrl(): string
     {
-        return Storage::disk('public')->url($this->image_url);
+        $path = $this->publicDiskPath();
+
+        return $path === '' ? '' : asset('storage/' . $path);
     }
 
     public function existsOnPublicDisk(): bool
     {
-        return filled($this->image_url) && Storage::disk('public')->exists($this->image_url);
+        $path = $this->publicDiskPath();
+
+        return $path !== '' && Storage::disk('public')->exists($path);
     }
 
     public function images()
     {
         return $this->hasMany(ProductImage::class);
+    }
+
+    private function publicDiskPath(): string
+    {
+        $path = trim((string) $this->image_url);
+
+        if ($path === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            $path = parse_url($path, PHP_URL_PATH) ?: '';
+        }
+
+        $path = ltrim($path, '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $path = substr($path, strlen('storage/'));
+        }
+
+        return ltrim($path, '/');
     }
 }
