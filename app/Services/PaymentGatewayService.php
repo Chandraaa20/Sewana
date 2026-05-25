@@ -97,13 +97,13 @@ class PaymentGatewayService
         $expectedToken = (string) config('services.xendit.callback_token');
 
         if ($expectedToken !== '' && ! hash_equals($expectedToken, (string) $callbackToken)) {
-            throw new RuntimeException('Token callback Xendit tidak valid.');
+            throw new RuntimeException('Token callback Xendit tidak valid.', 401);
         }
 
         $reference = $this->extractReference($payload);
 
         if (! $reference) {
-            throw new RuntimeException('Payload webhook Xendit tidak memiliki external_id.');
+            throw new RuntimeException('Payload webhook Xendit tidak memiliki external_id.', 400);
         }
 
         $order = Order::where('payment_reference', $reference)->first();
@@ -118,7 +118,7 @@ class PaymentGatewayService
             $expectedAmount = (int) round((float) $order->total_price);
 
             if ($expectedAmount !== $paidAmount) {
-                throw new RuntimeException('Nominal pembayaran Xendit tidak sesuai dengan tagihan.');
+                throw new RuntimeException('Nominal pembayaran Xendit tidak sesuai dengan tagihan.', 422);
             }
         }
 
