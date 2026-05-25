@@ -16,8 +16,12 @@ class PaymentInstructionController extends Controller
             ->where('user_id', Auth::id())
             ->where('source', 'online')
             ->findOrFail($id);
+        $paymentPayload = is_array($order->payment_payload) ? $order->payment_payload : [];
+        $paymentUrl = data_get($paymentPayload, 'payment_url')
+            ?: data_get($paymentPayload, 'invoice_url')
+            ?: data_get($paymentPayload, 'response.invoice_url');
 
-        return view('orders.payment_dummy', compact('order'));
+        return view('orders.payment_xendit', compact('order', 'paymentUrl'));
     }
 
     public function simulateSuccess(int $id, PaymentGatewayService $paymentGateway): RedirectResponse
@@ -30,7 +34,8 @@ class PaymentInstructionController extends Controller
 
         if ($order->payment_status !== Order::PAYMENT_STATUS_PAID) {
             $paymentGateway->markPaymentPaid($order, [
-                'type' => 'dummy_payment_simulation',
+                'type' => 'local_payment_fallback',
+                'provider' => 'local_fallback',
                 'status' => 'success',
                 'simulated_at' => now()->toISOString(),
                 'environment' => app()->environment(),
@@ -40,6 +45,6 @@ class PaymentInstructionController extends Controller
 
         return redirect()
             ->route('penyewa.orders.show', $order->id)
-            ->with('success', 'Simulasi pembayaran dummy berhasil. Pesanan tetap menunggu persetujuan pegawai.');
+            ->with('success', 'Fallback lokal pembayaran berhasil. Pesanan tetap menunggu persetujuan pegawai.');
     }
 }

@@ -7,7 +7,7 @@
                 <span class="admin-page-eyebrow">Pembayaran Offline</span>
                 <h1 class="admin-page-title">QRIS</h1>
                 <p class="admin-page-subtitle">
-                    Simulasi pembayaran QRIS untuk pesanan offline melalui alur gateway.
+                    Pembayaran QRIS pesanan offline melalui Xendit Sandbox.
                 </p>
             </div>
 
@@ -21,22 +21,37 @@
             <div class="col-lg-5">
                 <div class="admin-card h-100">
                     <div class="admin-card-header">
-                        <span class="admin-page-eyebrow">Scan Pembayaran</span>
+                        <span class="admin-page-eyebrow">Xendit Sandbox</span>
                         <h5 class="fw-bold text-dark mb-0 mt-1">QRIS</h5>
                     </div>
 
                     <div class="admin-card-body text-center">
-                        <div class="bg-white border rounded-4 p-4 d-inline-block shadow-sm">
-                            {!! $paymentQrCodeSvg !!}
-                        </div>
+                        @if (!empty($qrImageUrl))
+                            <div class="bg-white border rounded-4 p-4 d-inline-block shadow-sm">
+                                <img src="{{ $qrImageUrl }}" alt="QRIS Xendit pesanan #{{ $order->id }}"
+                                    class="img-fluid" width="220" height="220">
+                            </div>
+                        @elseif ($paymentQrCodeSvg)
+                            <div class="bg-white border rounded-4 p-4 d-inline-block shadow-sm">
+                                {!! $paymentQrCodeSvg !!}
+                            </div>
+                        @else
+                            <div class="alert alert-warning rounded-4 small mb-0">
+                                URL pembayaran Xendit belum tersedia untuk pesanan ini.
+                            </div>
+                        @endif
 
-                        <p class="text-muted small mt-3 mb-0">
-                            QR ini digunakan untuk simulasi pembayaran QRIS pada mode pengujian.
-                        </p>
+                        @if ($paymentQrCodeSvg || !empty($qrImageUrl))
+                            <p class="text-muted small mt-3 mb-0">
+                                Pindai QR ini untuk membuka pembayaran Xendit Sandbox.
+                            </p>
+                        @endif
 
-                        <a href="{{ $paymentUrl }}" target="_blank" rel="noopener" class="small text-decoration-none">
-                            Buka URL pembayaran QRIS
-                        </a>
+                        @if ($paymentUrl)
+                            <a href="{{ $paymentUrl }}" target="_blank" rel="noopener" class="small text-decoration-none">
+                                Buka URL pembayaran Xendit
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -112,12 +127,15 @@
 
                         @if ($order->payment_status !== 'paid')
                             @env(['local', 'development', 'testing'])
+                                <div class="alert alert-secondary rounded-4 small mb-3">
+                                    Fallback lokal untuk demo jika webhook Xendit Sandbox belum dapat diterima.
+                                </div>
                                 <form action="{{ route('pegawai.orders.offline-qris.simulate-success', $order) }}"
                                     method="POST">
                                     @csrf
-                                    <button type="submit" class="btn btn-success rounded-pill px-4">
+                                    <button type="submit" class="btn btn-outline-success rounded-pill px-4">
                                         <i class="bi bi-check-circle me-1"></i>
-                                        Simulasikan Pembayaran Diterima
+                                        Fallback Lokal: Tandai Pembayaran Diterima
                                     </button>
                                 </form>
                             @endenv

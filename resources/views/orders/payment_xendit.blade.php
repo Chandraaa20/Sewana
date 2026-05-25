@@ -13,9 +13,9 @@
     <div class="admin-page">
         <div class="admin-page-header">
             <div>
-                <span class="admin-page-eyebrow">Pembayaran Dummy</span>
+                <span class="admin-page-eyebrow">Xendit Sandbox</span>
                 <h1 class="admin-page-title">Instruksi Pembayaran</h1>
-                <p class="admin-page-subtitle">Halaman ini hanya simulasi sebelum integrasi payment gateway asli.</p>
+                <p class="admin-page-subtitle">Selesaikan pembayaran melalui halaman Xendit Sandbox.</p>
             </div>
         </div>
 
@@ -58,18 +58,30 @@
 
                     <div class="col-lg-5">
                         <div class="bg-light rounded-4 p-4 h-100">
-                            <h3 class="h6 fw-bold text-dark mb-2">Instruksi Dummy</h3>
+                            <h3 class="h6 fw-bold text-dark mb-2">Pembayaran Xendit Sandbox</h3>
                             <p class="text-muted small mb-4">
-                                Tidak ada pembayaran asli yang diproses dari halaman ini. Integrasi gateway akan
-                                ditambahkan pada tahap berikutnya.
+                                Klik tombol di bawah untuk membuka halaman pembayaran Xendit Sandbox. Status pembayaran
+                                akan diperbarui otomatis melalui webhook Xendit.
                             </p>
+                            @if ($paymentUrl)
+                                <a href="{{ $paymentUrl }}" class="btn btn-dark rounded-pill px-4 w-100 mb-3">
+                                    Buka Pembayaran Xendit
+                                </a>
+                            @else
+                                <div class="alert alert-warning rounded-4 small mb-3">
+                                    URL pembayaran Xendit belum tersedia. Silakan hubungi petugas.
+                                </div>
+                            @endif
                             @if (app()->environment(['local', 'development', 'testing']) && $order->payment_status !== 'paid')
+                                <div class="alert alert-secondary rounded-4 small mb-3">
+                                    Fallback lokal untuk demo jika webhook Xendit Sandbox belum dapat diterima.
+                                </div>
                                 <form method="POST"
                                     action="{{ route('penyewa.orders.payment.simulate-success', $order->id) }}"
                                     class="mb-3">
                                     @csrf
-                                    <button type="submit" class="btn btn-success rounded-pill px-4 w-100">
-                                        Simulasikan Pembayaran Berhasil
+                                    <button type="submit" class="btn btn-outline-success rounded-pill px-4 w-100">
+                                        Fallback Lokal: Tandai Pembayaran Berhasil
                                     </button>
                                 </form>
                             @endif

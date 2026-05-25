@@ -9,7 +9,8 @@ use App\Http\Controllers\{
     LandingController,
     OrderController,
     PaymentInstructionController,
-    TransactionVerificationController
+    TransactionVerificationController,
+    XenditWebhookController
 };
 
 /*
@@ -21,6 +22,8 @@ use App\Http\Controllers\{
 Route::get('/', LandingController::class)->name('landing');
 Route::get('/verify-transaction/{token}', TransactionVerificationController::class)
     ->name('transactions.verify');
+Route::post('/payments/xendit/webhook', XenditWebhookController::class)
+    ->name('payments.xendit.webhook');
 
 /*
 |--------------------------------------------------------------------------

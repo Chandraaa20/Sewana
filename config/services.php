@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'xendit' => [
+        'secret_key' => env('XENDIT_SECRET_KEY'),
+        'callback_token' => env('XENDIT_CALLBACK_TOKEN'),
+        'is_production' => filter_var(env('XENDIT_IS_PRODUCTION', false), FILTER_VALIDATE_BOOL),
+    ],
+
 ];

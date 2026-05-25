@@ -188,14 +188,19 @@ class OrderController extends Controller
                 'address' => $request->address,
             ]);
 
-            $payment = $paymentGateway->createPayment($order);
+            $payment = $paymentGateway->createPayment($order, [
+                'prefix' => 'SEWANA-ONLINE',
+                'success_redirect_url' => route('penyewa.orders.show', $order->id),
+                'failure_redirect_url' => route('penyewa.orders.show', $order->id),
+            ]);
 
             $order->update([
                 'payment_gateway' => $payment['gateway'],
                 'payment_reference' => $payment['reference'],
+                'payment_payload' => $payment['payload'],
             ]);
 
-            return redirect($payment['payment_url'])
+            return redirect($payment['payment_url'] ?: route('penyewa.orders.payment.instructions', $order->id))
                 ->with('success', 'Pesanan berhasil dibuat. Silakan ikuti instruksi pembayaran.');
         });
     }
@@ -215,7 +220,7 @@ class OrderController extends Controller
     }
 
     /** Store an offline staff order. */
-    public function storeOffline(Request $request)
+    public function storeOffline(Request $request, PaymentGatewayService $paymentGateway)
     {
         if (! Auth::user()->hasAnyRole(['pegawai', 'pemilik'])) {
             abort(403, 'Hanya staf dan pemilik yang bisa membuat pesanan offline.');
@@ -267,7 +272,7 @@ class OrderController extends Controller
             'nominal_diterima.min' => 'Nominal diterima tidak boleh kurang dari 0.',
         ]);
 
-        $order = DB::transaction(function () use ($request) {
+        $order = DB::transaction(function () use ($request, $paymentGateway) {
             $variant = ProductVariant::with('product')
                 ->whereKey($request->variant_id)
                 ->lockForUpdate()
@@ -339,7 +344,7 @@ class OrderController extends Controller
                 'order_status' => $paymentMethod === Order::PAYMENT_METHOD_CASH ? Order::ORDER_STATUS_RENTED : Order::ORDER_STATUS_PENDING,
                 'payment_method' => $paymentMethod,
                 'payment_status' => $paymentMethod === Order::PAYMENT_METHOD_CASH ? Order::PAYMENT_STATUS_PAID : Order::PAYMENT_STATUS_PENDING,
-                'payment_gateway' => $paymentMethod === Order::PAYMENT_METHOD_QRIS ? 'dummy' : null,
+                'payment_gateway' => null,
                 'paid_at' => $paymentMethod === Order::PAYMENT_METHOD_CASH ? now() : null,
                 'address' => $request->address,
             ]);
@@ -348,8 +353,18 @@ class OrderController extends Controller
             }
 
             if ($paymentMethod === Order::PAYMENT_METHOD_QRIS) {
+                $payment = $paymentGateway->createPayment($order, [
+                    'prefix' => 'SEWANA-QRIS',
+                    'payment_methods' => ['QRIS'],
+                    'success_redirect_url' => route('pegawai.orders.offline-qris.show', $order),
+                    'failure_redirect_url' => route('pegawai.orders.offline-qris.show', $order),
+                    'description' => 'Sewana QRIS Offline #' . $order->id,
+                ]);
+
                 $order->update([
-                    'payment_reference' => sprintf('QRIS-DUMMY-%s-%s', $order->id, now()->timestamp),
+                    'payment_gateway' => $payment['gateway'],
+                    'payment_reference' => $payment['reference'],
+                    'payment_payload' => $payment['payload'],
                 ]);
             }
 
@@ -372,12 +387,21 @@ class OrderController extends Controller
             abort(404);
         }
 
-        $paymentUrl = route('pegawai.orders.offline-qris.show', $order);
-        $paymentQrCodeSvg = $this->generateQrCodeSvg($paymentUrl);
-
         $order->load(['user', 'product', 'variant']);
+        $paymentPayload = is_array($order->payment_payload) ? $order->payment_payload : [];
+        $paymentUrl = data_get($paymentPayload, 'payment_url')
+            ?: data_get($paymentPayload, 'invoice_url')
+            ?: data_get($paymentPayload, 'response.invoice_url');
+        $qrString = data_get($paymentPayload, 'qr_data.qr_string')
+            ?: data_get($paymentPayload, 'qr_data.qr_code')
+            ?: data_get($paymentPayload, 'qr_data.qr_code_string');
+        $qrImageUrl = data_get($paymentPayload, 'qr_data.qr_code_url')
+            ?: data_get($paymentPayload, 'qr_data.qris_url');
+        $paymentQrCodeSvg = $qrString
+            ? $this->generateQrCodeSvg($qrString)
+            : ($paymentUrl ? $this->generateQrCodeSvg($paymentUrl) : null);
 
-        return view('orders.offline_qris', compact('order', 'paymentUrl', 'paymentQrCodeSvg'));
+        return view('orders.offline_qris', compact('order', 'paymentUrl', 'paymentQrCodeSvg', 'qrImageUrl'));
     }
 
     public function simulateOfflineQrisSuccess(Order $order)
@@ -402,10 +426,10 @@ class OrderController extends Controller
         $order->update([
             'payment_status' => Order::PAYMENT_STATUS_PAID,
             'paid_at' => now(),
-            'payment_reference' => $order->payment_reference ?: sprintf('QRIS-DUMMY-%s-%s', $order->id, now()->timestamp),
+            'payment_reference' => $order->payment_reference ?: sprintf('QRIS-FALLBACK-%s-%s', $order->id, now()->timestamp),
             'payment_payload' => [
-                'provider' => 'dummy',
-                'type' => 'offline_qris',
+                'provider' => 'local_fallback',
+                'type' => 'offline_qris_fallback',
                 'status' => 'success',
                 'simulated_at' => now()->toDateTimeString(),
                 'handled_by' => Auth::id(),
