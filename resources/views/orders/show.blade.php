@@ -542,7 +542,7 @@
             let currentOrderStatus = @json($order->order_status);
             let currentPaymentStatus = @json($order->payment_status);
 
-            const finalOrderStatuses = ['returned', 'cancelled'];
+            const finalOrderStatuses = ['returned', 'cancelled', 'rejected', 'refunded'];
             const finalPaymentStatuses = ['failed', 'expired'];
 
             if (

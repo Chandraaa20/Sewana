@@ -37,7 +37,7 @@ class OrderController extends Controller
         $search = trim((string) $request->input('search', ''));
 
         $orders = Order::with(['user', 'product.images', 'variant'])
-            ->whereNotIn('order_status', [Order::ORDER_STATUS_RETURNED, Order::ORDER_STATUS_CANCELLED])
+            ->whereNotIn('order_status', Order::CLOSED_ORDER_STATUSES)
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%"))
@@ -430,31 +430,35 @@ class OrderController extends Controller
             abort(404);
         }
 
-        if ($order->payment_status === Order::PAYMENT_STATUS_PAID) {
-            return redirect()->route('pegawai.orders.offline-qris.show', $order)
-                ->with('warning', 'Pembayaran pesanan ini sudah diterima.');
-        }
+        return DB::transaction(function () use ($order) {
+            $lockedOrder = Order::lockForUpdate()->findOrFail($order->id);
 
-        if (! in_array($order->order_status, [Order::ORDER_STATUS_PENDING, Order::ORDER_STATUS_APPROVED], true)) {
-            return redirect()->route('pegawai.orders.offline-qris.show', $order)
-                ->with('error', 'Pembayaran hanya bisa dikonfirmasi untuk pesanan yang masih pending atau disetujui.');
-        }
+            if ($lockedOrder->payment_status === Order::PAYMENT_STATUS_PAID) {
+                return redirect()->route('pegawai.orders.offline-qris.show', $lockedOrder)
+                    ->with('warning', 'Pembayaran pesanan ini sudah diterima.');
+            }
 
-        $order->update([
-            'payment_status' => Order::PAYMENT_STATUS_PAID,
-            'paid_at' => now(),
-            'payment_reference' => $order->payment_reference ?: sprintf('QRIS-FALLBACK-%s-%s', $order->id, now()->timestamp),
-            'payment_payload' => [
-                'provider' => 'local_fallback',
-                'type' => 'offline_qris_fallback',
-                'status' => 'success',
-                'simulated_at' => now()->toDateTimeString(),
-                'handled_by' => Auth::id(),
-            ],
-        ]);
+            if (! in_array($lockedOrder->order_status, [Order::ORDER_STATUS_PENDING, Order::ORDER_STATUS_APPROVED], true)) {
+                return redirect()->route('pegawai.orders.offline-qris.show', $lockedOrder)
+                    ->with('error', 'Pembayaran hanya bisa dikonfirmasi untuk pesanan yang masih pending atau disetujui.');
+            }
 
-        return redirect()->route('pegawai.orders.offline-qris.show', $order)
-            ->with('success', 'Pembayaran QRIS berhasil dikonfirmasi oleh sistem.');
+            $lockedOrder->update([
+                'payment_status' => Order::PAYMENT_STATUS_PAID,
+                'paid_at' => now(),
+                'payment_reference' => $lockedOrder->payment_reference ?: sprintf('QRIS-FALLBACK-%s-%s', $lockedOrder->id, now()->timestamp),
+                'payment_payload' => [
+                    'provider' => 'local_fallback',
+                    'type' => 'offline_qris_fallback',
+                    'status' => 'success',
+                    'simulated_at' => now()->toDateTimeString(),
+                    'handled_by' => Auth::id(),
+                ],
+            ]);
+
+            return redirect()->route('pegawai.orders.offline-qris.show', $lockedOrder)
+                ->with('success', 'Pembayaran QRIS berhasil dikonfirmasi oleh sistem.');
+        });
     }
     /** Approve an order and decrement stock. */
     public function approve(Request $request, $id)
@@ -748,6 +752,11 @@ class OrderController extends Controller
         if (! in_array($order->order_status, [Order::ORDER_STATUS_PENDING, Order::ORDER_STATUS_CANCELLED])) {
             return back()->with('error', 'Pesanan tidak bisa dihapus karena sudah diproses oleh staf.');
         }
+
+        if ($order->payment_status === Order::PAYMENT_STATUS_PAID) {
+            return back()->with('error', 'Pesanan yang sudah dibayar tidak bisa dihapus. Silakan hubungi petugas untuk proses pembatalan.');
+        }
+
         if ($order->identity_photo) {
             Storage::disk('public')->delete($order->identity_photo);
         }
