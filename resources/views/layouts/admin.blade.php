@@ -116,6 +116,13 @@
                                     <span>Kelola Pesanan</span>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ route('pegawai.transactions.scanner') }}"
+                                    class="nav-link {{ request()->routeIs('pegawai.transactions.scanner') ? 'active' : '' }}">
+                                    <i class="bi bi-qr-code-scan"></i>
+                                    <span>Scan Validasi</span>
+                                </a>
+                            </li>
                             @if (auth()->user()->hasRole('pegawai'))
                                 <li class="nav-item">
                                     <a href="{{ route('pegawai.orders.all') }}"

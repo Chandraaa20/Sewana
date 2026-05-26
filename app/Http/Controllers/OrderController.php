@@ -45,7 +45,9 @@ class OrderController extends Controller
                             ->where('name', 'like', "%{$search}%")
                             ->orWhere('sku', 'like', "%{$search}%"))
                         ->when(ctype_digit($search), fn($idQuery) => $idQuery->orWhere('id', (int) $search))
-                        ->orWhere('customer_name', 'like', "%{$search}%");
+                        ->orWhere('customer_name', 'like', "%{$search}%")
+                        ->orWhere('renter_name', 'like', "%{$search}%")
+                        ->orWhere('renter_phone', 'like', "%{$search}%");
                 });
             })
             ->orderBy('created_at', 'desc')
@@ -68,7 +70,9 @@ class OrderController extends Controller
                             ->where('name', 'like', "%{$search}%")
                             ->orWhere('sku', 'like', "%{$search}%"))
                         ->when(ctype_digit($search), fn($idQuery) => $idQuery->orWhere('id', (int) $search))
-                        ->orWhere('customer_name', 'like', "%{$search}%");
+                        ->orWhere('customer_name', 'like', "%{$search}%")
+                        ->orWhere('renter_name', 'like', "%{$search}%")
+                        ->orWhere('renter_phone', 'like', "%{$search}%");
                 });
             })
             ->when($request->status, function ($query, $status) {
@@ -118,7 +122,10 @@ class OrderController extends Controller
                         ->where('status', 'tersedia');
                 }),
             ],
-            'customer_name' => 'required|string|max:255',
+            'renter_name' => 'required|string|max:100',
+            'renter_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'event_purpose' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:1000',
             'identity_photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
             'start_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:' . $today],
             'end_date' => 'required|date_format:Y-m-d|after_or_equal:start_date',
@@ -128,7 +135,17 @@ class OrderController extends Controller
             'product_id.exists' => 'Produk yang dipilih tidak valid atau sedang tidak aktif.',
             'variant_id.required' => 'Varian wajib dipilih.',
             'variant_id.exists' => 'Varian tidak valid, tidak sesuai produk, stoknya habis, atau statusnya tidak tersedia.',
-            'customer_name.required' => 'Nama penyewa wajib diisi.',
+            'renter_name.required' => 'Nama penyewa atau pengambil wajib diisi.',
+            'renter_name.string' => 'Nama penyewa atau pengambil harus berupa teks.',
+            'renter_name.max' => 'Nama penyewa atau pengambil maksimal 100 karakter.',
+            'renter_phone.required' => 'Nomor WhatsApp atau telepon penyewa wajib diisi.',
+            'renter_phone.string' => 'Nomor WhatsApp atau telepon penyewa harus berupa teks.',
+            'renter_phone.max' => 'Nomor WhatsApp atau telepon penyewa maksimal 20 karakter.',
+            'renter_phone.regex' => 'Nomor WhatsApp atau telepon hanya boleh berisi angka, tanda plus, spasi, atau strip.',
+            'event_purpose.string' => 'Keperluan acara harus berupa teks.',
+            'event_purpose.max' => 'Keperluan acara maksimal 100 karakter.',
+            'notes.string' => 'Catatan tambahan harus berupa teks.',
+            'notes.max' => 'Catatan tambahan maksimal 1000 karakter.',
             'identity_photo.required' => 'Foto identitas wajib diunggah.',
             'identity_photo.image' => 'Foto identitas harus berupa gambar.',
             'identity_photo.mimes' => 'Foto identitas harus berformat JPG, JPEG, PNG, atau WEBP.',
@@ -179,7 +196,11 @@ class OrderController extends Controller
 
             $order = Order::create([
                 'user_id' => Auth::id(),
-                'customer_name' => $request->customer_name,
+                'customer_name' => $request->renter_name,
+                'renter_name' => $request->renter_name,
+                'renter_phone' => $request->renter_phone,
+                'event_purpose' => $request->event_purpose,
+                'notes' => $request->notes,
                 'identity_photo' => $photoPath,
                 'source' => 'online',
                 'product_id' => $request->product_id,
@@ -235,7 +256,10 @@ class OrderController extends Controller
         $today = now()->toDateString();
 
         $request->validate([
-            'customer_name' => 'required|string|max:255',
+            'renter_name' => 'required|string|max:100',
+            'renter_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'event_purpose' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:1000',
             'identity_photo' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
             'product_id' => [
                 'required',
@@ -255,7 +279,17 @@ class OrderController extends Controller
             'payment_method' => ['required', Rule::in(Order::PAYMENT_METHODS)],
             'nominal_diterima' => 'required_if:payment_method,' . Order::PAYMENT_METHOD_CASH . '|nullable|numeric|min:0',
         ], [
-            'customer_name.required' => 'Nama pelanggan wajib diisi.',
+            'renter_name.required' => 'Nama penyewa atau pengambil wajib diisi.',
+            'renter_name.string' => 'Nama penyewa atau pengambil harus berupa teks.',
+            'renter_name.max' => 'Nama penyewa atau pengambil maksimal 100 karakter.',
+            'renter_phone.required' => 'Nomor WhatsApp atau telepon penyewa wajib diisi.',
+            'renter_phone.string' => 'Nomor WhatsApp atau telepon penyewa harus berupa teks.',
+            'renter_phone.max' => 'Nomor WhatsApp atau telepon penyewa maksimal 20 karakter.',
+            'renter_phone.regex' => 'Nomor WhatsApp atau telepon hanya boleh berisi angka, tanda plus, spasi, atau strip.',
+            'event_purpose.string' => 'Keperluan acara harus berupa teks.',
+            'event_purpose.max' => 'Keperluan acara maksimal 100 karakter.',
+            'notes.string' => 'Catatan tambahan harus berupa teks.',
+            'notes.max' => 'Catatan tambahan maksimal 1000 karakter.',
             'identity_photo.required' => 'Foto identitas wajib diunggah.',
             'identity_photo.image' => 'Foto identitas harus berupa gambar.',
             'identity_photo.mimes' => 'Foto identitas harus berformat JPG, JPEG, PNG, atau WEBP.',
@@ -341,7 +375,11 @@ class OrderController extends Controller
 
             $order = Order::create([
                 'user_id' => Auth::id(),
-                'customer_name' => $request->customer_name,
+                'customer_name' => $request->renter_name,
+                'renter_name' => $request->renter_name,
+                'renter_phone' => $request->renter_phone,
+                'event_purpose' => $request->event_purpose,
+                'notes' => $request->notes,
                 'identity_photo' => $photoPath,
                 'source' => 'offline',
                 'product_id' => $request->product_id,

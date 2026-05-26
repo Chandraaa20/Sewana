@@ -94,6 +94,13 @@ Route::middleware('auth')->group(function () {
                 Route::get('/{id}/status', 'status')->middleware('permission:orders.read')->name('status');
                 Route::get('/{id}', 'show')->middleware('permission:orders.read')->name('show');
             });
+
+            Route::get('/transactions/scanner', [TransactionVerificationController::class, 'scanner'])
+                ->middleware('permission:orders.read')
+                ->name('transactions.scanner');
+            Route::get('/transactions/{token}/resolve', [TransactionVerificationController::class, 'resolveForStaff'])
+                ->middleware('permission:orders.read')
+                ->name('transactions.resolve');
         });
 
     /* --- Renter Area --- */

@@ -55,7 +55,7 @@
                                     </tr>
                                     <tr>
                                         <th class="text-muted fw-semibold">Nama Penyewa</th>
-                                        <td class="text-end">{{ $order->customer_name ?: '-' }}</td>
+                                        <td class="text-end">{{ $order->renter_name ?: ($order->customer_name ?: '-') }}</td>
                                     </tr>
                                     <tr>
                                         <th class="text-muted fw-semibold">Nama Produk</th>

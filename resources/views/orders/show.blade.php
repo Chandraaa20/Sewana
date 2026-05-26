@@ -85,7 +85,9 @@
                 default => 'Status pembayaran belum valid',
             };
 
-            $customerLabel = $order->customer_name ?: $order->user->name ?? 'Tidak Diketahui';
+            $accountName = $order->user->name ?? 'Tamu/Offline';
+            $renterName = $order->renter_name ?: ($order->customer_name ?: 'Tidak Diketahui');
+            $customerLabel = $renterName;
             $productName = $order->product->name ?? 'Produk Tidak Ditemukan';
             $productDesc = $order->product->description ?? '-';
 
@@ -229,8 +231,8 @@
                                     <i class="bi bi-person-fill fs-5"></i>
                                 </div>
                                 <div>
-                                    <div class="admin-mini-label">Nama Penyewa</div>
-                                    <div class="fw-semibold text-dark">{{ $customerLabel }}</div>
+                                    <div class="admin-mini-label">Nama Penyewa/Pengambil</div>
+                                    <div class="fw-semibold text-dark">{{ $renterName }}</div>
                                 </div>
                             </div>
                             <div class="col-md-6 d-flex align-items-start gap-3">
@@ -238,11 +240,29 @@
                                     <i class="bi bi-envelope-at-fill fs-5"></i>
                                 </div>
                                 <div>
-                                    <div class="admin-mini-label">Akun Sistem</div>
-                                    <div class="fw-semibold text-dark">{{ $order->user->name ?? 'Tamu/Offline' }}</div>
+                                    <div class="admin-mini-label">Nama Akun</div>
+                                    <div class="fw-semibold text-dark">{{ $accountName }}</div>
                                     @if (isset($order->user->email))
                                         <div class="text-muted small">{{ $order->user->email }}</div>
                                     @endif
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-start gap-3">
+                                <div class="bg-light rounded-circle text-secondary admin-icon-box">
+                                    <i class="bi bi-whatsapp fs-5"></i>
+                                </div>
+                                <div>
+                                    <div class="admin-mini-label">WhatsApp/Telepon</div>
+                                    <div class="fw-semibold text-dark">{{ $order->renter_phone ?: '-' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-start gap-3">
+                                <div class="bg-light rounded-circle text-secondary admin-icon-box">
+                                    <i class="bi bi-calendar-heart fs-5"></i>
+                                </div>
+                                <div>
+                                    <div class="admin-mini-label">Keperluan Acara</div>
+                                    <div class="fw-semibold text-dark">{{ $order->event_purpose ?: '-' }}</div>
                                 </div>
                             </div>
                             <div class="col-12 d-flex align-items-start gap-3">
@@ -255,6 +275,17 @@
                                     </div>
                                 </div>
                             </div>
+                            @if ($order->notes)
+                                <div class="col-12 d-flex align-items-start gap-3">
+                                    <div class="bg-light rounded-circle text-secondary admin-icon-box">
+                                        <i class="bi bi-card-text fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="admin-mini-label">Catatan Tambahan</div>
+                                        <div class="fw-semibold text-dark">{{ $order->notes }}</div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -275,6 +306,15 @@
                             @endif
                         </div>
 
+                        <div class="alert alert-light border rounded-4 small mb-3">
+                            <div class="fw-semibold text-dark mb-1">
+                                Nama Penyewa/Pengambil: {{ $renterName }}
+                            </div>
+                            <div class="text-muted">
+                                Pastikan nama pada identitas sesuai dengan Nama Penyewa/Pengambil.
+                            </div>
+                        </div>
+
                         @if ($identityPhoto)
                             <div class="text-center bg-light rounded-4 p-3 border border-dashed">
                                 <img src="{{ $identityPhoto }}" class="img-fluid rounded-3 shadow-sm admin-proof-image"
@@ -284,7 +324,7 @@
                         @else
                             <div class="text-center py-4 text-muted bg-light rounded-4 border border-dashed">
                                 <i class="bi bi-camera fs-1 opacity-50 mb-2 d-block"></i>
-                                Belum ada foto identitas yang dilampirkan.
+                                Foto identitas belum tersedia atau file tidak ditemukan.
                             </div>
                         @endif
                     </div>
@@ -373,16 +413,23 @@
                             </div>
 
                             <div class="d-flex flex-column flex-md-row align-items-center gap-4">
-                                <div class="bg-white border rounded-4 p-3 shadow-sm">
+                                <div id="verification-qr-code" class="bg-white border rounded-4 p-3 shadow-sm">
                                     {!! $verificationQrCodeSvg !!}
                                 </div>
                                 <div class="text-center text-md-start">
                                     <p class="fw-semibold text-dark mb-2">Pindai QR Code ini untuk memvalidasi transaksi.
                                     </p>
-                                    <a href="{{ $verificationUrl }}" target="_blank" rel="noopener"
-                                        class="small text-decoration-none">
-                                        Buka halaman validasi
-                                    </a>
+                                    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center justify-content-md-start">
+                                        <button type="button" id="download-verification-qr"
+                                            class="btn btn-outline-dark rounded-pill px-4"
+                                            data-file-name="sewana-qr-order-{{ $order->id }}.png">
+                                            <i class="bi bi-download me-1"></i> Download QR Code
+                                        </button>
+                                        <a href="{{ $verificationUrl }}" target="_blank" rel="noopener"
+                                            class="btn btn-link text-decoration-none px-0">
+                                            Buka halaman validasi
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -537,6 +584,70 @@
     @endphp
 
     <script>
+        (() => {
+            const downloadButton = document.getElementById('download-verification-qr');
+            const qrContainer = document.getElementById('verification-qr-code');
+
+            if (!downloadButton || !qrContainer) {
+                return;
+            }
+
+            downloadButton.addEventListener('click', () => {
+                const svg = qrContainer.querySelector('svg');
+
+                if (!svg) {
+                    return;
+                }
+
+                const svgText = new XMLSerializer().serializeToString(svg);
+                const svgBlob = new Blob([svgText], {
+                    type: 'image/svg+xml;charset=utf-8'
+                });
+                const svgUrl = URL.createObjectURL(svgBlob);
+                const image = new Image();
+
+                image.onload = () => {
+                    const padding = 24;
+                    const size = Math.max(image.width, image.height) + padding * 2;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+
+                    const context = canvas.getContext('2d');
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, size, size);
+                    context.drawImage(
+                        image,
+                        (size - image.width) / 2,
+                        (size - image.height) / 2
+                    );
+
+                    URL.revokeObjectURL(svgUrl);
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            return;
+                        }
+
+                        const pngUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = pngUrl;
+                        link.download = downloadButton.dataset.fileName || 'sewana-qr-code.png';
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        URL.revokeObjectURL(pngUrl);
+                    }, 'image/png');
+                };
+
+                image.onerror = () => {
+                    URL.revokeObjectURL(svgUrl);
+                };
+
+                image.src = svgUrl;
+            });
+        })();
+
         (() => {
             const statusUrl = @json($statusUrl);
             let currentOrderStatus = @json($order->order_status);

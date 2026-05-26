@@ -18,7 +18,7 @@ class ProductImage extends Model
     {
         $path = $this->publicDiskPath();
 
-        return $path === '' ? '' : asset('storage/' . $path);
+        return $path === '' ? '' : '/storage/' . $path;
     }
 
     public function existsOnPublicDisk(): bool

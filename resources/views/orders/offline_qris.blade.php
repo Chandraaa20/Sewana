@@ -90,7 +90,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="admin-mini-label">Nama Pelanggan</div>
-                                <div class="fw-semibold text-dark">{{ $order->customer_name ?? '-' }}</div>
+                                <div class="fw-semibold text-dark">{{ $order->renter_name ?? ($order->customer_name ?? '-') }}</div>
                             </div>
 
                             <div class="col-md-6">

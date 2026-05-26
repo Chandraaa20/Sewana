@@ -96,7 +96,7 @@
                                 default => ['tone' => 'secondary', 'label' => '-', 'icon' => 'dash-circle'],
                             };
 
-                            $customerName = $order->customer_name ?? ($order->user->name ?? 'Tidak Diketahui');
+                            $customerName = $order->renter_name ?? ($order->customer_name ?? ($order->user->name ?? 'Tidak Diketahui'));
                             $productName = $order->product->name ?? '-';
                         @endphp
 

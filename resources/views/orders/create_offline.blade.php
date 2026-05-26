@@ -45,19 +45,40 @@
 
             <div class="admin-card-body">
                 <div class="row g-3">
-                    {{-- Customer name --}}
+                    {{-- Renter identity --}}
                     <div class="col-md-6">
-                        <label class="form-label admin-form-label">Nama Pelanggan</label>
-                        <input type="text" name="customer_name" class="form-control" value="{{ old('customer_name') }}"
-                            required>
+                        <label class="form-label admin-form-label" for="renter_name">Nama Penyewa / Pengambil</label>
+                        <input type="text" id="renter_name" name="renter_name" class="form-control"
+                            value="{{ old('renter_name') }}" maxlength="100"
+                            placeholder="Masukkan nama sesuai identitas" required>
+                        <small class="text-muted">Isi sesuai nama pada identitas yang akan diunggah.</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label" for="renter_phone">Nomor WhatsApp / Telepon</label>
+                        <input type="text" id="renter_phone" name="renter_phone" class="form-control"
+                            value="{{ old('renter_phone') }}" maxlength="20"
+                            placeholder="Contoh: 08123456789 atau +628123456789" required>
                     </div>
 
                     {{-- Identity photo --}}
                     <div class="col-md-6">
                         <label class="form-label admin-form-label">Foto Identitas (KTP/SIM)</label>
-                        <input type="file" name="identity_photo" class="form-control" accept="image/*"
-                            capture="environment" required>
-                        <small class="text-muted">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
+                        <input type="file" name="identity_photo" class="form-control" accept="image/*" required>
+                        <small class="text-muted">Pastikan foto identitas terlihat jelas dan nama sesuai dengan Nama Penyewa/Pengambil.</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label admin-form-label" for="event_purpose">Keperluan Acara</label>
+                        <input type="text" id="event_purpose" name="event_purpose" class="form-control"
+                            value="{{ old('event_purpose') }}" maxlength="100"
+                            placeholder="Contoh: Wisuda, Pernikahan, Photoshoot">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label admin-form-label" for="notes">Catatan Tambahan</label>
+                        <textarea name="notes" id="notes" rows="3" class="form-control"
+                            placeholder="Contoh: request ukuran khusus, waktu ambil, atau catatan lain">{{ old('notes') }}</textarea>
                     </div>
                     {{-- Product --}}
                     <div class="col-md-6">

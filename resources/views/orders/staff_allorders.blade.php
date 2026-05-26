@@ -96,7 +96,7 @@
                                                     <p class="text-muted small mb-0">Pelanggan</p>
                                                     <p
                                                         class="fw-semibold text-dark mb-0 text-truncate admin-text-truncate-sm">
-                                                        {{ $order->customer_name ?? ($order->user->name ?? 'Tidak Diketahui') }}
+                                                        {{ $order->renter_name ?? ($order->customer_name ?? ($order->user->name ?? 'Tidak Diketahui')) }}
                                                     </p>
                                                 </div>
                                             </div>

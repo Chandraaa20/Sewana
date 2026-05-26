@@ -99,19 +99,53 @@
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
 
-                            {{-- Nama Penyewa --}}
+                            {{-- Identitas Penyewa --}}
                             <div class="mb-3">
-                                <label class="form-label fw-semibold" for="customer-name">Nama Penyewa</label>
-                                <input type="text" id="customer-name" name="customer_name" class="form-control"
-                                    value="{{ old('customer_name') }}" placeholder="Masukkan nama lengkap penyewa" required>
+                                <label class="form-label fw-semibold" for="renter-name">Nama Penyewa / Pengambil</label>
+                                <input type="text" id="renter-name" name="renter_name" class="form-control"
+                                    value="{{ old('renter_name', auth()->user()->name) }}"
+                                    placeholder="Masukkan nama sesuai identitas" maxlength="100" required>
+                                <small class="text-muted">Isi sesuai nama pada identitas yang akan diunggah.</small>
+                                @error('renter_name')
+                                    <div class="admin-field-error">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="renter-phone">Nomor WhatsApp / Telepon</label>
+                                <input type="text" id="renter-phone" name="renter_phone" class="form-control"
+                                    value="{{ old('renter_phone') }}"
+                                    placeholder="Contoh: 08123456789 atau +628123456789" maxlength="20" required>
+                                @error('renter_phone')
+                                    <div class="admin-field-error">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="event-purpose">Keperluan Acara</label>
+                                <input type="text" id="event-purpose" name="event_purpose" class="form-control"
+                                    value="{{ old('event_purpose') }}"
+                                    placeholder="Contoh: Wisuda, Pernikahan, Photoshoot" maxlength="100">
+                                @error('event_purpose')
+                                    <div class="admin-field-error">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="notes">Catatan Tambahan</label>
+                                <textarea name="notes" id="notes" rows="3" class="form-control"
+                                    placeholder="Contoh: request ukuran khusus, waktu ambil, atau catatan lain">{{ old('notes') }}</textarea>
+                                @error('notes')
+                                    <div class="admin-field-error">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             {{-- Foto Identitas --}}
                             <div class="mb-3">
                                 <label class="form-label fw-semibold" for="identity-photo">Unggah Foto Identitas (KTP / SIM)</label>
                                 <input type="file" id="identity-photo" name="identity_photo" class="form-control"
-                                    accept="image/*" capture="environment" required>
-                                <small class="text-muted">Format JPG, JPEG, PNG, atau WEBP. Maksimal 10 MB.</small>
+                                    accept="image/*" required>
+                                <small class="text-muted">Pastikan foto identitas terlihat jelas dan nama sesuai dengan Nama Penyewa/Pengambil.</small>
                                 @error('identity_photo')
                                     <div class="admin-field-error">{{ $message }}</div>
                                 @enderror

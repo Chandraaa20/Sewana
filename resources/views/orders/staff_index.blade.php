@@ -61,7 +61,7 @@
                             'refunded' => 'Refund',
                             default => 'Tidak Diketahui',
                         };
-                        $customerLabel = $order->customer_name ?: $order->user->name ?? 'Tidak Diketahui';
+                        $customerLabel = $order->renter_name ?: ($order->customer_name ?: $order->user->name ?? 'Tidak Diketahui');
                         $isOnlineOrder = $order->source === 'online';
                         $isOfflineQrisOrder = $order->source === 'offline' && $order->payment_method === 'qris';
                         $isOfflineCashOrder = $order->source === 'offline' && $order->payment_method === 'cash';
@@ -125,6 +125,9 @@
                                                 <div>
                                                     <p class="text-muted small mb-0">Pelanggan</p>
                                                     <p class="fw-semibold text-dark mb-0">{{ $customerLabel }}</p>
+                                                    @if ($order->renter_phone)
+                                                        <p class="text-muted small mb-0">{{ $order->renter_phone }}</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>

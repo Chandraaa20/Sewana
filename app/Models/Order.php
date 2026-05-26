@@ -69,6 +69,10 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'customer_name',
+        'renter_name',
+        'renter_phone',
+        'event_purpose',
+        'notes',
         'identity_photo',
         'product_id',
         'variant_id',
@@ -220,10 +224,35 @@ class Order extends Model
 
     private function publicDiskUrl(?string $path): ?string
     {
-        if (! filled($path) || ! Storage::disk('public')->exists($path)) {
+        $path = $this->publicDiskPath($path);
+
+        if ($path === '' || ! Storage::disk('public')->exists($path)) {
             return null;
         }
 
-        return Storage::disk('public')->url($path);
+        return '/storage/' . $path;
+    }
+
+    private function publicDiskPath(?string $path): string
+    {
+        $path = trim((string) $path);
+
+        if ($path === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            $path = parse_url($path, PHP_URL_PATH) ?: '';
+        }
+
+        $path = ltrim($path, '/');
+
+        foreach (['storage/', 'public/'] as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                $path = substr($path, strlen($prefix));
+            }
+        }
+
+        return ltrim($path, '/');
     }
 }
