@@ -21,6 +21,7 @@ use App\Http\Controllers\{
 
 Route::get('/', LandingController::class)->name('landing');
 Route::get('/verify-transaction/{token}', TransactionVerificationController::class)
+    ->where('token', '[A-Za-z0-9]{64}')
     ->name('transactions.verify');
 Route::post('/payments/xendit/webhook', XenditWebhookController::class)
     ->name('payments.xendit.webhook');
@@ -100,6 +101,7 @@ Route::middleware('auth')->group(function () {
                 ->name('transactions.scanner');
             Route::get('/transactions/{token}/resolve', [TransactionVerificationController::class, 'resolveForStaff'])
                 ->middleware('permission:orders.read')
+                ->where('token', '[A-Za-z0-9]{64}')
                 ->name('transactions.resolve');
         });
 

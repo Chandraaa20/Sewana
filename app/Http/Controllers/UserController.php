@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -24,7 +25,7 @@ class UserController extends Controller
             ->paginate(10) // Paginate users.
             ->withQueryString();
 
-        $roles = Role::all();
+        $roles = Role::whereIn('name', ['pemilik', 'pegawai', 'penyewa'])->get();
 
         return view('users.index', compact('users', 'roles', 'search'));
     }
@@ -33,7 +34,10 @@ class UserController extends Controller
     public function updateRole(Request $request, User $user)
     {
         $request->validate([
-            'role' => 'required|exists:roles,name',
+            'role' => ['required', Rule::in(['pemilik', 'pegawai', 'penyewa'])],
+        ], [
+            'role.required' => 'Peran pengguna wajib dipilih.',
+            'role.in' => 'Peran yang dipilih tidak diizinkan.',
         ]);
 
         $user->syncRoles([$request->role]);

@@ -15,6 +15,19 @@ class XenditWebhookController extends Controller
         $context = $this->safeContext($request->all());
         Log::info('Xendit webhook received.', $context);
 
+        if (app()->environment('production') && (string) config('services.xendit.callback_token') === '') {
+            Log::warning('Xendit webhook rejected because callback token is not configured.', $context + [
+                'order_found' => false,
+                'result' => 'rejected',
+                'http_status' => 401,
+                'reason' => 'XENDIT_CALLBACK_TOKEN belum diatur pada production.',
+            ]);
+
+            return response()->json([
+                'message' => 'Konfigurasi token callback Xendit belum diatur.',
+            ], 401);
+        }
+
         try {
             $order = $paymentGateway->handleXenditWebhook(
                 $request->all(),
