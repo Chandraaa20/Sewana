@@ -6,6 +6,7 @@
 
 .product-card__actions {
     gap: 0.75rem;
+    min-width: 0;
 }
 
 .product-card__image .carousel-inner {
@@ -32,7 +33,8 @@
 /* Admin product index specific */
 
 .product-img-container {
-    height: 220px;
+    height: auto;
+    aspect-ratio: 4 / 3;
     background: #f8f9fa;
     overflow: hidden;
 }
@@ -54,4 +56,19 @@
 
 .object-fit-cover {
     object-fit: cover;
+}
+
+@media (max-width: 575.98px) {
+    .product-card__actions {
+        flex-direction: column;
+    }
+
+    .product-card__actions .btn,
+    .product-card__footer .btn {
+        width: 100%;
+    }
+
+    .product-modal .modal-body {
+        overflow-x: auto;
+    }
 }

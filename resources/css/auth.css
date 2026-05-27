@@ -30,21 +30,21 @@ html,
 }
 
 .auth-wrapper {
-    display: flex;
+    display: grid;
+    place-items: center;
     width: 100%;
     min-width: 0;
     min-height: 100vh;
+    min-height: 100svh;
+    padding: clamp(20px, 5vw, 48px);
+    background:
+        radial-gradient(circle at 18% 18%, rgba(59, 130, 246, 0.16), transparent 34%),
+        radial-gradient(circle at 82% 80%, rgba(20, 184, 166, 0.1), transparent 30%),
+        linear-gradient(135deg, #0f172a 0%, var(--auth-bg-dark) 54%, #020617 100%);
 }
 
 .auth-left {
-    position: relative;
-    flex: 1.2;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px 10%;
-    overflow: hidden;
-    background: linear-gradient(135deg, #0f172a, var(--auth-bg-dark));
+    display: none;
 }
 
 .auth-left::before {
@@ -87,26 +87,34 @@ html,
 
 .auth-right {
     min-width: 0;
-    flex: 1;
+    width: 100%;
+    max-width: 420px;
+    min-height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px;
-    border-left: 1px solid var(--auth-border-light);
-    background-color: var(--auth-bg-dark);
+    padding: 0;
+    border-left: none;
+    background: transparent;
 }
 
 .card-login,
 .card-register {
-    width: 100%;
+    width: min(100%, 420px);
     min-width: 0;
-    max-width: 420px;
+    max-width: none;
+    margin-inline: auto;
     padding: 40px;
     border: 1px solid var(--auth-border-light);
     border-radius: 24px;
     background: var(--auth-bg-card);
     backdrop-filter: blur(20px);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.auth-page form {
+    width: 100%;
+    min-width: 0;
 }
 
 .auth-page .form-label {
@@ -227,24 +235,21 @@ html,
 }
 
 @media (max-width: 991px) {
-    .auth-left {
-        display: none;
+    .auth-wrapper {
+        padding: 24px 18px;
     }
 
     .auth-right {
         width: 100%;
-        min-height: 100vh;
-        padding: 28px 16px;
+        max-width: 420px;
+        min-height: auto;
+        padding: 0;
         border-left: none;
     }
 
     .card-login,
     .card-register {
-        max-width: 420px;
-        padding: 20px;
-        border: none;
-        background: transparent;
-        box-shadow: none;
+        padding: 28px;
     }
 
     .auth-page .form-control {
@@ -253,15 +258,16 @@ html,
 }
 
 @media (max-width: 430px) {
-    .auth-right {
-        align-items: flex-start;
-        padding: 72px 16px 32px;
+    .auth-wrapper {
+        min-height: 100dvh;
+        padding: 20px 16px;
     }
 
     .card-login,
     .card-register {
-        max-width: 100%;
-        padding: 0;
+        width: 100%;
+        padding: 22px 20px;
+        border-radius: 20px;
     }
 
     .auth-mobile-icon {
@@ -297,7 +303,7 @@ html,
 }
 
 @media (max-width: 360px) {
-    .auth-right {
+    .auth-wrapper {
         padding-left: 14px;
         padding-right: 14px;
     }

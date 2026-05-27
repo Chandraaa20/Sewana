@@ -55,6 +55,7 @@
     max-width: 1100px;
     margin: 0 auto;
     padding: 40px 20px;
+    min-width: 0;
 }
 
 .dashboard-header {
@@ -123,6 +124,7 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     align-items: center;
+    gap: 14px;
     text-decoration: none;
     color: inherit;
 }
@@ -202,6 +204,52 @@
     background: #ffffff;
     border-radius: 1rem;
     border: 1px dashed rgba(108, 117, 125, 0.35);
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-container {
+        padding: 28px 16px;
+    }
+
+    .dashboard-header,
+    .dashboard-title,
+    .popular-products-title {
+        margin-bottom: 1rem;
+    }
+
+    .header-title,
+    .dashboard-title {
+        font-size: 1.35rem;
+    }
+
+    .glass-card,
+    .dashboard-stats .card {
+        border-radius: 18px;
+    }
+
+    .order-item {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .status-pill {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-container {
+        padding: 24px 14px;
+    }
+
+    .popular-products .img-hover-zoom,
+    .popular-products .no-image-box {
+        height: auto;
+        aspect-ratio: 16 / 11;
+    }
 }
 
 .empty-state-icon {

@@ -1,6 +1,7 @@
 /* Shared reusable styles */
 
 .product-card {
+    min-width: 0;
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 1rem;
@@ -15,7 +16,8 @@
 
 .product-card__image {
     background: #f8f9fa;
-    height: 200px;
+    height: auto;
+    aspect-ratio: 4 / 3;
     overflow: hidden;
 }
 
@@ -32,6 +34,7 @@
 }
 
 .product-card__meta .product-card__title {
+    overflow-wrap: anywhere;
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 0.35rem;
@@ -41,6 +44,7 @@
     color: #6c757d;
     font-size: 0.9rem;
     min-height: 2.4rem;
+    overflow-wrap: anywhere;
 }
 
 .status-badge {
@@ -59,6 +63,7 @@
 }
 
 .product-variant-table {
+    min-width: 520px;
     border-radius: 0.85rem;
     overflow: hidden;
 }
@@ -71,4 +76,18 @@
 .product-variant-table td {
     padding: 0.85rem 0.95rem;
     vertical-align: middle;
+}
+
+@media (max-width: 575.98px) {
+    .product-card:hover {
+        transform: none;
+    }
+
+    .product-card__meta {
+        padding: 0.9rem;
+    }
+
+    .status-badge {
+        width: 100%;
+    }
 }

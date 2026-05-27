@@ -63,6 +63,7 @@
 
 .product-card__actions {
     gap: 8px !important;
+    min-width: 0;
 }
 
 .product-modal .table th {
@@ -270,5 +271,19 @@
     .product-card__meta,
     .product-card .card-body {
         padding: 14px !important;
+    }
+
+    .product-card__actions {
+        flex-direction: column;
+    }
+
+    .product-card__actions .btn,
+    .product-card .card-footer .btn {
+        width: 100%;
+    }
+
+    .product-modal .table th {
+        width: auto;
+        min-width: 120px;
     }
 }

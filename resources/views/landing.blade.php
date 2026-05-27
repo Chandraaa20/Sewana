@@ -38,17 +38,68 @@
         </div>
     </nav>
 
+    @php
+        $heroProducts = $products->take(3);
+    @endphp
+
     <section class="hero">
         <div class="container">
-            <div class="badge-hero">
-                <i class="bi bi-stars text-warning me-2"></i> Sistem Penyewaan Modern
-            </div>
-            <h1>Sewa Mudah,<br>Tampil Mewah.</h1>
-            <p>Platform penyewaan busana premium dan perlengkapan acara. Temukan koleksi terbaik, cek ketersediaan
-                secara langsung, dan sewa dalam hitungan detik.</p>
-            <div class="hero-actions">
-                <a href="{{ route('register') }}" class="btn btn-primary-custom">Mulai Menjelajah</a>
-                <a href="#katalog" class="btn btn-outline-light nav-btn py-3 px-4">Lihat Koleksi</a>
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <div class="badge-hero">
+                        <i class="bi bi-stars text-warning me-2"></i> Sistem Penyewaan Modern
+                    </div>
+                    <h1>Sewa Mudah,<br>Tampil Mewah.</h1>
+                    <p>Platform penyewaan busana premium dan perlengkapan acara. Temukan koleksi terbaik, cek
+                        ketersediaan secara langsung, dan sewa dalam hitungan detik.</p>
+                    <div class="hero-actions">
+                        <a href="{{ route('register') }}" class="btn btn-primary-custom">Mulai Menjelajah</a>
+                        <a href="#katalog" class="btn btn-outline-light nav-btn py-3 px-4">Lihat Koleksi</a>
+                    </div>
+
+                    <div class="hero-trust">
+                        <span><i class="bi bi-check2-circle"></i> Stok realtime</span>
+                        <span><i class="bi bi-shield-check"></i> Transaksi aman</span>
+                        <span><i class="bi bi-stars"></i> Koleksi terkurasi</span>
+                    </div>
+                </div>
+
+                <div class="hero-showcase" aria-label="Koleksi pilihan Sewana">
+                    @forelse ($heroProducts as $product)
+                        @php
+                            $productImage = $product->firstAvailableImage();
+                        @endphp
+                        <a href="{{ route('login') }}" class="hero-product-card hero-product-card-{{ $loop->iteration }}">
+                            <div class="hero-product-media">
+                                @if ($productImage)
+                                    <img src="{{ $productImage->publicUrl() }}" alt="Foto produk {{ $product->name }}"
+                                        width="360" height="460" loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                                        decoding="async">
+                                @else
+                                    <div class="hero-product-placeholder">
+                                        <i class="bi bi-image"></i>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="hero-product-meta">
+                                <span>{{ $product->name }}</span>
+                                <strong>Rp{{ number_format($product->base_price ?? 50000, 0, ',', '.') }}<small>/hari</small></strong>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="hero-product-card hero-product-card-1">
+                            <div class="hero-product-media">
+                                <div class="hero-product-placeholder">
+                                    <i class="bi bi-box-seam"></i>
+                                </div>
+                            </div>
+                            <div class="hero-product-meta">
+                                <span>Koleksi Premium</span>
+                                <strong>Siap disewa</strong>
+                            </div>
+                        </div>
+                    @endforelse
+                </div>
             </div>
         </div>
     </section>
@@ -183,4 +234,3 @@
 </body>
 
 </html>
-

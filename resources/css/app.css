@@ -8,9 +8,55 @@
 @import url("./shared/orders.css");
 @import url("./shared/dashboard.css");
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-width: 0;
+}
+
 body {
     background-color: #f8f9fa;
     color: #333;
+    overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+    max-width: 100%;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+    min-width: 0;
+}
+
+.container,
+.container-fluid,
+.row,
+[class*="col-"] {
+    min-width: 0;
+}
+
+.table-responsive {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+.form-control,
+.form-select,
+.btn {
+    max-width: 100%;
 }
 
 .navbar {
@@ -23,4 +69,37 @@ body {
 
 main {
     min-height: 80vh;
+    min-width: 0;
+}
+
+@media (max-width: 575.98px) {
+    body {
+        font-size: 0.95rem;
+    }
+
+    .container,
+    .container-fluid {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .navbar .container,
+    .navbar .container-fluid {
+        gap: 0.75rem;
+    }
+
+    .navbar-collapse {
+        padding-top: 0.75rem;
+    }
+
+    .navbar-nav {
+        align-items: stretch !important;
+        gap: 0.35rem;
+    }
+
+    .navbar-nav .btn,
+    .navbar-nav form,
+    .navbar-nav form .btn {
+        width: 100%;
+    }
 }
